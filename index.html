@@ -1,4 +1,151 @@
 <!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Gibhaus Loading</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 0; 
+            background: #050508; 
+            color: #eeeeee; 
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex; flex-direction: column; justify-content: space-between;
+            height: 100vh; padding: 50px;
+        }
+
+        /* ----- GORE CONTAINER (GPU-EXPLOSION) ----- */
+        .gore-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden; z-index: -1; pointer-events: none;
+        }
+        .splatter {
+            position: absolute; top: 50%; left: 50%;
+            width: 300px; height: 300px; opacity: 0;
+            transform: translate3d(-50%, -50%, 0) scale(0);
+        }
+        /* Die Bilder fliegen zu unterschiedlichen Zeiten in verschiedene Ecken */
+        .splat-1 { animation: explode1 6s ease-out infinite; }
+        .splat-2 { animation: explode2 7s ease-out infinite; animation-delay: 2s; }
+        .splat-3 { animation: explode3 5.5s ease-out infinite; animation-delay: 4s; }
+
+        @keyframes explode1 {
+            0% { transform: translate3d(-50%, -50%, 0) scale(0) rotate(0deg); opacity: 0; }
+            5% { opacity: 0.8; }
+            100% { transform: translate3d(-400px, -250px, 0) scale(1.6) rotate(-90deg); opacity: 0; }
+        }
+        @keyframes explode2 {
+            0% { transform: translate3d(-50%, -50%, 0) scale(0) rotate(0deg); opacity: 0; }
+            5% { opacity: 0.8; }
+            100% { transform: translate3d(350px, -180px, 0) scale(1.3) rotate(120deg); opacity: 0; }
+        }
+        @keyframes explode3 {
+            0% { transform: translate3d(-50%, -50%, 0) scale(0) rotate(0deg); opacity: 0; }
+            5% { opacity: 0.9; }
+            100% { transform: translate3d(-80px, 350px, 0) scale(2.2) rotate(45deg); opacity: 0; }
+        }
+
+        /* ----- GLITCH TEXT EFFEKT (GIBHAUS) ----- */
+        .header { 
+            font-size: 64px; font-weight: 900; letter-spacing: 4px; 
+            text-transform: uppercase; color: #ff003c; text-align: center;
+            position: relative; animation: glitch 1s linear infinite;
+        }
+        @keyframes glitch {
+            0% { transform: translate3d(0, 0, 0); text-shadow: 2px -2px #ff0000, -2px 2px #00fffa; }
+            15% { transform: translate3d(-3px, 2px, 0); text-shadow: -3px 2px #ff0000, 3px -2px #00fffa; }
+            16% { transform: translate3d(0, 0, 0); text-shadow: none; }
+            89% { transform: translate3d(0, 0, 0); text-shadow: none; }
+            90% { transform: translate3d(4px, -2px, 0); text-shadow: 3px 3px #ff0000, -3px -3px #00fffa; }
+            95% { transform: translate3d(-2px, 2px, 0); text-shadow: -2px 1px #ff0000, 2px -1px #00fffa; }
+            100% { transform: translate3d(0, 0, 0); text-shadow: 2px -2px #ff0000, -2px 2px #00fffa; }
+        }
+
+        /* ----- INTERFACE BOXEN ----- */
+        .container { display: flex; gap: 40px; justify-content: center; margin-top: 20px; }
+        .box { 
+            background: rgba(15, 5, 5, 0.6); 
+            border: 1px solid rgba(255, 0, 60, 0.2);
+            border-radius: 4px; padding: 25px; width: 380px;
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.05);
+        }
+        .box h3 { margin-top: 0; color: #ff003c; border-bottom: 2px solid #ff003c; padding-bottom: 8px; font-size: 20px; }
+        .box ul { padding-left: 20px; margin: 0; line-height: 1.8; color: #ccc; }
+
+        /* ----- PROGRESS BAR ----- */
+        .footer { width: 100%; max-width: 800px; margin: 0 auto; text-align: center; }
+        .progress-container { background: rgba(255,0,60,0.1); border: 1px solid rgba(255,0,60,0.3); border-radius: 2px; height: 12px; width: 100%; overflow: hidden; margin-top: 15px; }
+        .progress-bar { background: #ff003c; width: 0%; height: 100%; transition: width 0.4s ease-out; box-shadow: 0 0 10px #ff003c; }
+        #file-text { font-size: 12px; color: #666; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    </style>
+</head>
+<body>
+
+    <!-- Blut-Splatter im Hintergrund -->
+    <div class="gore-container">
+        <img src="https://imgur.com" class="splatter splat-1">
+        <img src="https://wikimedia.org" class="splatter splat-2">
+        <img src="https://imgur.com" class="splatter splat-3">
+    </div>
+
+    <!-- Glitch-Titel -->
+    <div class="header">GIBHAUS</div>
+
+    <div class="container">
+        <div class="box">
+            <h3>🩸 METZEL-REGELN</h3>
+            <ul>
+                <li>Kein feiges RDM / Griefing</li>
+                <li>Respektiere die Community</li>
+                <li>Spam im Voice/Chat wird bestraft</li>
+                <li>Admins haben das letzte Wort</li>
+            </ul>
+        </div>
+        <div class="box">
+            <h3>💀 DIE SCHLÄCHTER (TEAM)</h3>
+            <ul>
+                <li><strong>Meierhans</strong> - Projektleitung</li>
+                <li><strong>Admin_1</strong> - Operator</li>
+                <li><strong>Mod_2</strong> - Moderator</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div id="status-text" style="font-size: 18px; font-weight: bold; color: #ff003c;">VERBINDUNG WIRD HERGESTELLT...</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="load-bar"></div>
+        </div>
+        <div id="file-text">Warte auf Serverdaten...</div>
+    </div>
+
+    <script>
+        const workshopCollectionId = "3387451124";
+        let totalFiles = 100;
+        let filesDownloaded = 0;
+
+        function SetFilesNeeded(needed) { if (needed > 0) totalFiles = needed; }
+
+        function DownloadingFile(fileName) {
+            filesDownloaded++;
+            let percent = Math.min((filesDownloaded / totalFiles) * 100, 100);
+            document.getElementById("load-bar").style.width = percent + "%";
+            document.getElementById("status-text").innerHTML = "EXTRAHIERE GEWRE... (" + Math.round(percent) + "%)";
+            document.getElementById("file-text").innerHTML = "Lade Asset: " + fileName;
+        }
+
+        function SetStatusChanged(status) { document.getElementById("status-text").innerHTML = status.toUpperCase(); }
+
+        window.onload = function() {
+            if (workshopCollectionId) {
+                window.location.href = "steam://url/CommunityFilePage/" + workshopCollectionId;
+            }
+        };
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
 <html>
 <head>
     <title>Server Loading Screen</title>
