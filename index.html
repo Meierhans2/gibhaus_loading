@@ -1,157 +1,21 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Gibhaus Loading</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body { 
-            background: #000; 
-            color: #fff; 
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        /* GPU-Shader Hintergrund */
-        #shader-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        /* ===== 16:9 DIASHOW CONTAINER ===== */
-        .slideshow-wrapper {
-            margin-top: auto;
-            margin-bottom: auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-
-        .slideshow-container {
-            /* HIER DIE GRÖSSE ANPASSEN (PARAMETER) */
-            width: 65vw; 
-            
-            /* Automatische 16:9 Berechnung über Aspect-Ratio */
-            aspect-ratio: 16 / 9; 
-            position: relative;
-            overflow: hidden;
-            background: #000;
-            border: 2px solid rgba(255, 0, 60, 0.4);
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-        }
-
-        .slide {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            /* Sanfter Crossfade über die Grafikkarte */
-            transition: opacity 1.5s ease-in-out; 
-        }
-
-        .slide.active {
-            opacity: 1;
-        }
-
-        /* ===== SCHWARZES DOWNLOAD BANNER ===== */
-        .bottom-banner {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            border-top: 2px solid #ff003c;
-            padding: 20px 50px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            z-index: 10;
-        }
-
-        .status-line {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ff003c;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .progress-container {
-            width: 100%;
-            max-width: 1000px;
-            background: #111;
-            border: 1px solid #333;
-            height: 10px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            background: #ff003c;
-            width: 0%;
-            height: 100%;
-            transition: width 0.3s ease-out;
-            box-shadow: 0 0 10px #ff003c;
-        }
-
-        .file-line {
-            font-size: 12px;
-            color: #888;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 1000px;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- WebGL Canvas für deinen Shadertoy-Code -->
-    <canvas id="shader-canvas"></canvas>
-
-    <!-- Mittiges 16:9 Objekt -->
-    <div class="slideshow-wrapper">
-        <div class="slideshow-container" id="slideshow">
-            <!-- Die Bilder werden via JavaScript generiert -->
-        </div>
-    </div>
-
-    <!-- Schwarzer Info-Banner unten -->
-    <div class="bottom-banner">
-        <div class="status-line" id="status-text">Verbindung wird hergestellt...</div>
-        <div class="progress-container">
-            <div class="progress-bar" id="load-bar"></div>
-        </div>
-        <div class="file-line" id="file-text">Warte auf Serverdaten...</div>
-    </div>
-
-    <!-- WebGL Shader Script -->
+    <!-- WebGL Shader Script (Optimiert auf 30 FPS, Loch-Aussparung & Anti-Aliasing) -->
     <script>
         const canvas = document.getElementById('shader-canvas');
         const gl = canvas.getContext('webgl');
 
         if (!gl) { console.error("WebGL nicht unterstützt."); }
 
-        // Vertex Shader (Standard Vollbild-Quad)
         const vsSource = `
             attribute vec2 position;
             void main() { gl_Position = vec4(position, 0.0, 1.0); }
         `;
 
-        // Dein originaler Shadertoy-Code (angepasst auf WebGL 1.0 Variablen)
         const fsSource = `
             precision highp float;
             uniform vec2 iResolution;
             uniform float iTime;
+            uniform float slideshowWidthPct; // Übergabe der Diashow-Breite (z.B. 0.65 für 65vw)
+            uniform float bannerHeightPx;     // Übergabe der Banner-Höhe in Pixeln
 
             float hash21(in vec2 p) {
                 p = 50.0*fract(p*0.3183099 + vec2(0.71,0.113));
@@ -182,7 +46,7 @@
             float fbmNoise(in vec2 p, in int oct) {
                 mat2 m = mat2(0.8, 0.6, -0.6, 0.8);
                 float f = 0.0; float s = 0.5; float t = 0.0;
-                for(int i=0; i<4; i++) { // WebGL unroll-konform fest auf 4
+                for(int i=0; i<4; i++) {
                     f += s*noise(p); t += s; p = m*p*2.01; s *= 0.5;
                 }
                 return f/t;
@@ -208,6 +72,31 @@
                 return p;
             }
             void main() {
+                // ---- 1. AUSSPARUNGS-BERECHNUNG (EARLY OUT) ----
+                // Banner unten verwerfen
+                if (gl_FragCoord.y <= bannerHeightPx) {
+                    discard; 
+                }
+
+                // 16:9 Diashow-Box in der Mitte berechnen & verwerfen
+                vec2 currentUV = gl_FragCoord.xy / iResolution.xy; // Normiert 0.0 - 1.0
+                float screenAspect = iResolution.x / iResolution.y;
+                float targetAspect = 16.0 / 9.0;
+                
+                // Exakte Größe der Box spiegeln (muss mit CSS .slideshow-container übereinstimmen)
+                float boxWidth = slideshowWidthPct; 
+                float boxHeight = (boxWidth * screenAspect) / targetAspect;
+
+                float xMin = 0.5 - (boxWidth * 0.5);
+                float xMax = 0.5 + (boxWidth * 0.5);
+                float yMin = 0.5 - (boxHeight * 0.5);
+                float yMax = 0.5 + (boxHeight * 0.5);
+
+                if (currentUV.x >= xMin && currentUV.x <= xMax && currentUV.y >= yMin && currentUV.y <= yMax) {
+                    discard; // Mittleres 16:9 Fenster wird komplett ignoriert -> spart extrem GPU!
+                }
+
+                // ---- 2. ECHTER SHADER (WENN PIXEL SICHTBAR) ----
                 vec3 col1 = vec3(0.0, 0.01, 0.05);
                 vec3 col2 = vec3(0.6, 0.0, 0.1);
                 float spd = 0.01;
@@ -218,14 +107,17 @@
                 uv *= 2.0;
                 uv = dis(uv, time * disSpd);
                 
-                float n = ceil(fbmNoise(uv - time * spd, 4) - fbmNoise(uv + time * spd, 4) - 0.5*fbmVoronoi(uv*0.3));
+                // ---- KANTENGLÄTTUNG (ANTI-ALIASING) STATT CEIL ----
+                float rawNoise = fbmNoise(uv - time * spd, 4) - fbmNoise(uv + time * spd, 4) - 0.5*fbmVoronoi(uv*0.3);
+                
+                // smoothstep sorgt für ein sauberes, flimmerfreies Anti-Aliasing an den Farb-Kanten
+                float n = smoothstep(0.0, 0.08, rawNoise); 
                 n = max(min(n, 1.0), 0.0);
                 
                 gl_FragColor = vec4(mix(col1, col2, n), 1.0);
             }
         `;
 
-        // Shader-Kompilierungs-Boilerplate
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
             gl.shaderSource(shader, source); gl.compileShader(shader);
@@ -248,6 +140,8 @@
 
         const resLoc = gl.getUniformLocation(program, 'iResolution');
         const timeLoc = gl.getUniformLocation(program, 'iTime');
+        const widthPctLoc = gl.getUniformLocation(program, 'slideshowWidthPct');
+        const bannerHeightLoc = gl.getUniformLocation(program, 'bannerHeightPx');
 
         function resizeCanvas() {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -255,26 +149,29 @@
         }
         window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
+        // ---- 30 FPS TIMING VARIABLEN ----
+        let lastFrameTime = 0;
+        const fpsInterval = 1000 / 30; // Exakt 33.33ms pro Frame für stabile 30 FPS
+
         function render(time) {
-            gl.uniform2f(resLoc, canvas.width, canvas.height);
-            gl.uniform1f(timeLoc, time * 0.001);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
             requestAnimationFrame(render);
+
+            // Zeit-Differenz seit dem letzten Frame prüfen (30 FPS Limit)
+            const elapsed = time - lastFrameTime;
+
+            if (elapsed >= fpsInterval) {
+                // Letzte Framezeit anpassen, fängt Framesync-Verschiebungen ab
+                lastFrameTime = time - (elapsed % fpsInterval);
+
+                gl.uniform2f(resLoc, canvas.width, canvas.height);
+                gl.uniform1f(timeLoc, time * 0.001);
+                
+                // Übergabe der Parameter an den Shader (muss synchron zu deinem CSS sein!)
+                gl.uniform1f(widthPctLoc, 0.65);     // 0.65 entspricht exakt den 65vw aus deinem CSS
+                gl.uniform1f(bannerHeightLoc, 92.0); // Höhe des unteren schwarzen Banners in Pixeln
+
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            }
         }
         requestAnimationFrame(render);
     </script>
-
-    <!-- Diashow & GMod DL Script -->
-    <script>
-        // ===== SETTINGS =====
-        const totalImages = 5; // ANZAHL DEINER BILDER IM ORDNER
-        const imageFolder = "slides/"; // ORDNERNAME (muss mit / enden)
-        const switchInterval = 4000; // ZEIT PRO BILD IN MS (4 Sekunden)
-        const workshopCollectionId = "3387451124"; // Deine Steam-Workshop ID
-
-        const slideshowContainer = document.getElementById('slideshow');
-        
-        // 1. Bilder dynamisch generieren (Erwartet Dateinamen wie: 1.jpg, 2.jpg ...)
-        for (let i = 1; i <= totalImages; i++) {
-            const img = document.createElement('img');
-            img.src = imageFolder + i + ".jpg";
