@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Loading Screen</title>
+    <style>
+        body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 20%; }
+        .status { font-size: 24px; margin-bottom: 10px; }
+        .sub-status { font-size: 16px; color: #888; }
+    </style>
+</head>
+<body>
+
+    <div class="status" id="status-text">Connecting to server...</div>
+    <div class="sub-status" id="file-text">Initializing files...</div>
+
+    <script type="text/javascript">
+        // REPLACE THIS WITH YOUR ACTUAL STEAM WORKSHOP COLLECTION ID
+        const workshopCollectionId = "3387451124";
+
+        // GMod native function called when download progress updates
+        function DownloadingFile(fileName) {
+            document.getElementById("file-text").innerHTML = "Downloading: " + fileName;
+        }
+
+        // GMod native function called when server status changes
+        function SetStatusChanged(status) {
+            document.getElementById("status-text").innerHTML = status;
+        }
+
+        // This forces the client browser to initialize a background download handle
+        window.onload = function() {
+            if (workshopCollectionId !== "3387451124") {
+                // Subtle exploit of Steam's overlay browser protocol to trigger a sync
+                window.location.href = "steam://url/CommunityFilePage/" + workshopCollectionId;
+            }
+        };
+    </script>
+</body>
+</html>
