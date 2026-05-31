@@ -1,4 +1,117 @@
-    <!-- WebGL Shader Script (Optimiert auf 30 FPS, Loch-Aussparung & Anti-Aliasing) -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Gibhaus Loading</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #shader-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .slideshow-wrapper {
+            margin-top: auto;
+            margin-bottom: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        .slideshow-container {
+            width: 65vw; 
+            aspect-ratio: 16 / 9; 
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            border: 2px solid rgba(255, 0, 60, 0.4);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out; 
+        }
+        .slide.active {
+            opacity: 1;
+        }
+        .bottom-banner {
+            width: 100%;
+            height: 92px;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 2px solid #ff003c;
+            padding: 20px 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+        .status-line {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff003c;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .progress-container {
+            width: 100%;
+            max-width: 1000px;
+            background: #111;
+            border: 1px solid #333;
+            height: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: #ff003c;
+            width: 0%;
+            height: 100%;
+            transition: width 0.3s ease-out;
+            box-shadow: 0 0 10px #ff003c;
+        }
+        .file-line {
+            font-size: 12px;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 1000px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="shader-canvas"></canvas>
+
+    <div class="slideshow-wrapper">
+        <div class="slideshow-container" id="slideshow"></div>
+    </div>
+
+    <div class="bottom-banner">
+        <div class="status-line" id="status-text">Verbindung wird hergestellt...</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="load-bar"></div>
+        </div>
+        <div class="file-line" id="file-text">Warte auf Serverdaten...</div>
+    </div>
+
     <script>
         const canvas = document.getElementById('shader-canvas');
         const gl = canvas.getContext('webgl');
@@ -14,76 +127,110 @@
             precision highp float;
             uniform vec2 iResolution;
             uniform float iTime;
-            uniform float slideshowWidthPct; // Übergabe der Diashow-Breite (z.B. 0.65 für 65vw)
-            uniform float bannerHeightPx;     // Übergabe der Banner-Höhe in Pixeln
+            uniform float slideshowWidthPct;
+            uniform float bannerHeightPx;
 
-            float hash21(in vec2 p) {
-                p = 50.0*fract(p*0.3183099 + vec2(0.71,0.113));
-                return fract(p.x*p.y*(p.x+p.y));
+            float hash21( in vec2 p )
+            {
+                p = 50.0*fract( p*0.3183099 + vec2(0.71,0.113));
+                return fract( p.x*p.y*(p.x+p.y) );
             }
-            vec2 hash22(in vec2 p) {
-                return vec2(hash21(p.xy+vec2(0.0,0.0)), hash21(p.yx+vec2(0.7,0.5)));
+
+            vec2 hash22( in vec2 p )
+            {
+                return vec2(hash21(p.xy+vec2(0.0,0.0)),
+                            hash21(p.yx+vec2(0.7,0.5)));
             }
-            float noise(in vec2 x) {
-                vec2 i = floor(x); vec2 f = fract(x);
+
+            float noise( in vec2 x )
+            {
+                vec2 i = floor(x);
+                vec2 f = fract(x);
                 f = f*f*(3.0-2.0*f);
-                float a = hash21(i+vec2(0,0)); float b = hash21(i+vec2(1,0));
-                float c = hash21(i+vec2(0,1)); float d = hash21(i+vec2(1,1));
+                float a = hash21(i+vec2(0,0));
+                float b = hash21(i+vec2(1,0));
+                float c = hash21(i+vec2(0,1));
+                float d = hash21(i+vec2(1,1));
                 return -1.0+2.0*mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
             }
-            float voronoi(in vec2 p) {
-                vec2 i = floor(p); vec2 f = fract(p);
+
+            float voronoi( in vec2 p )
+            {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
                 float d = 10.0; 
-                for(int n=-1; n<=1; n++) {
-                    for(int m=-1; m<=1; m++) {
-                        vec2 b = vec2(float(m), float(n));
-                        vec2 r = b - f + hash22(i+b);
-                        d = min(d,dot(r,r));
-                    }
+                for( int n=-1; n<=1; n++ )
+                for( int m=-1; m<=1; m++ )
+                {
+                    vec2 b = vec2(float(m), float(n));
+                    vec2 r = b - f + hash22(i+b);
+                    d = min(d,dot(r,r));
                 }
                 return d;
             }
-            float fbmNoise(in vec2 p, in int oct) {
-                mat2 m = mat2(0.8, 0.6, -0.6, 0.8);
-                float f = 0.0; float s = 0.5; float t = 0.0;
-                for(int i=0; i<4; i++) {
-                    f += s*noise(p); t += s; p = m*p*2.01; s *= 0.5;
+
+            float fbmNoise( in vec2 p, in int oct )
+            {
+                mat2 m = mat2( 0.8, 0.6, -0.6, 0.8 );
+
+                float f = 0.0;
+                float s = 0.5;
+                float t = 0.0;
+                for( int i=0; i<4; i++ )
+                {
+                    f += s*noise( p );
+                    t += s;
+                    p = m*p*2.01;
+                    s *= 0.5;
                 }
                 return f/t;
             }
-            float fbmVoronoi(in vec2 p) {
-                float f = 1.0; float s = 1.0;
-                for(int i=0; i<8; i++) {
-                    float v = voronoi(p); f = min(f,v*s); p *= 2.0; s *= 1.4;
+
+            float fbmVoronoi( in vec2 p )
+            {
+                float f = 1.0;
+                float s = 1.0;
+                for( int i=0; i<8; i++ )
+                {
+                    float v = voronoi(p);
+                    f = min(f,v*s);
+                    p *= 2.0;
+                    s *= 1.4;
                 }
                 return 3.0*f;
             }
-            vec2 fbm2Noise(in vec2 p, in int o) {
-                return vec2(fbmNoise(p.xy+vec2(0.0,0.0),o), fbmNoise(p.yx+vec2(0.7,1.3),o));
+
+            vec2 fbm2Noise( in vec2 p, in int o )
+            {
+                return vec2(fbmNoise(p.xy+vec2(0.0,0.0),o), 
+                            fbmNoise(p.yx+vec2(0.7,1.3),o));
             }
-            vec2 dis(in vec2 p, in float t) {
+
+            vec2 dis( in vec2 p, in float t )
+            {
                 p.x -= 0.2*t;
-                float a = 1.6; float b = 0.5;
+
+                float a = 1.6;
+                float b = 0.5;
                 for(int i=1; i<4; i++) {
                     float j = float(i);
                     p += a*(b/j)*sin(p.yx*pow(2.0, j-1.0)+(j/10.0)+(j-1.0)+t);
                 }
+                
                 p += 0.4*fbm2Noise(0.5*p-t*vec2(0.9,0.0), 2);
                 return p;
             }
-            void main() {
-                // ---- 1. AUSSPARUNGS-BERECHNUNG (EARLY OUT) ----
-                // Banner unten verwerfen
+
+            void main()
+            {
                 if (gl_FragCoord.y <= bannerHeightPx) {
                     discard; 
                 }
 
-                // 16:9 Diashow-Box in der Mitte berechnen & verwerfen
-                vec2 currentUV = gl_FragCoord.xy / iResolution.xy; // Normiert 0.0 - 1.0
+                vec2 currentUV = gl_FragCoord.xy / iResolution.xy;
                 float screenAspect = iResolution.x / iResolution.y;
                 float targetAspect = 16.0 / 9.0;
                 
-                // Exakte Größe der Box spiegeln (muss mit CSS .slideshow-container übereinstimmen)
                 float boxWidth = slideshowWidthPct; 
                 float boxHeight = (boxWidth * screenAspect) / targetAspect;
 
@@ -93,28 +240,27 @@
                 float yMax = 0.5 + (boxHeight * 0.5);
 
                 if (currentUV.x >= xMin && currentUV.x <= xMax && currentUV.y >= yMin && currentUV.y <= yMax) {
-                    discard; // Mittleres 16:9 Fenster wird komplett ignoriert -> spart extrem GPU!
+                    discard; 
                 }
 
-                // ---- 2. ECHTER SHADER (WENN PIXEL SICHTBAR) ----
                 vec3 col1 = vec3(0.0, 0.01, 0.05);
                 vec3 col2 = vec3(0.6, 0.0, 0.1);
                 float spd = 0.01;
                 float disSpd = 0.05;
-                float time = iTime + 160.0;
                 
-                vec2 uv = (2.0 * gl_FragCoord.xy - iResolution.xy)/iResolution.y;
+                float time = iTime + 160.0;
+
+                vec2 uv = (2. * gl_FragCoord.xy - iResolution.xy)/iResolution.y;
                 uv *= 2.0;
                 uv = dis(uv, time * disSpd);
-                
-                // ---- KANTENGLÄTTUNG (ANTI-ALIASING) STATT CEIL ----
+
                 float rawNoise = fbmNoise(uv - time * spd, 4) - fbmNoise(uv + time * spd, 4) - 0.5*fbmVoronoi(uv*0.3);
-                
-                // smoothstep sorgt für ein sauberes, flimmerfreies Anti-Aliasing an den Farb-Kanten
-                float n = smoothstep(0.0, 0.08, rawNoise); 
+                float n = smoothstep(0.0, 0.08, rawNoise);
                 n = max(min(n, 1.0), 0.0);
-                
-                gl_FragColor = vec4(mix(col1, col2, n), 1.0);
+
+                vec3 color = mix(col1, col2, n);
+
+                gl_FragColor = vec4(color, 1.0);
             }
         `;
 
@@ -149,29 +295,74 @@
         }
         window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
-        // ---- 30 FPS TIMING VARIABLEN ----
         let lastFrameTime = 0;
-        const fpsInterval = 1000 / 30; // Exakt 33.33ms pro Frame für stabile 30 FPS
+        const fpsInterval = 1000 / 30;
 
         function render(time) {
             requestAnimationFrame(render);
-
-            // Zeit-Differenz seit dem letzten Frame prüfen (30 FPS Limit)
             const elapsed = time - lastFrameTime;
 
             if (elapsed >= fpsInterval) {
-                // Letzte Framezeit anpassen, fängt Framesync-Verschiebungen ab
                 lastFrameTime = time - (elapsed % fpsInterval);
-
                 gl.uniform2f(resLoc, canvas.width, canvas.height);
                 gl.uniform1f(timeLoc, time * 0.001);
-                
-                // Übergabe der Parameter an den Shader (muss synchron zu deinem CSS sein!)
-                gl.uniform1f(widthPctLoc, 0.65);     // 0.65 entspricht exakt den 65vw aus deinem CSS
-                gl.uniform1f(bannerHeightLoc, 92.0); // Höhe des unteren schwarzen Banners in Pixeln
-
+                gl.uniform1f(widthPctLoc, 0.65);     
+                gl.uniform1f(bannerHeightLoc, 92.0); 
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             }
         }
         requestAnimationFrame(render);
     </script>
+
+    <script>
+        const totalImages = 5; 
+        const imageFolder = "slides/"; 
+        const switchInterval = 4000; 
+        const workshopCollectionId = "3387451124"; 
+
+        const slideshowContainer = document.getElementById('slideshow');
+        
+        for (let i = 1; i <= totalImages; i++) {
+            const img = document.createElement('img');
+            img.src = "https://placehold.co+" + i;
+            img.classList.add('slide');
+            slideshowContainer.appendChild(img);
+        }
+
+        const slides = document.querySelectorAll('.slide');
+        
+        let currentSlide = Math.floor(Math.random() * totalImages);
+        if (slides.length > 0) {
+            slides[currentSlide].classList.add('active');
+        }
+
+        setInterval(() => {
+            if (slides.length > 0) {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }
+        }, switchInterval);
+
+        let totalFiles = 100;
+        let filesDownloaded = 0;
+
+        function SetFilesNeeded(needed) { if (needed > 0) totalFiles = needed; }
+
+        function DownloadingFile(fileName) {
+            filesDownloaded++;
+            let percent = Math.min((filesDownloaded / totalFiles) * 100, 100);
+            document.getElementById('load-bar').style.width = percent + '%';
+            document.getElementById('status-text').innerHTML = "Lade Server-Dateien... (" + Math.round(percent) + "%)";
+            document.getElementById('file-text').innerHTML = "Extrahiere: " + fileName;
+        }
+
+        function SetStatusChanged(status) {
+            document.getElementById('status-text').innerHTML = status.toUpperCase();
+        }
+
+        window.onload = function() {
+            if (workshopCollectionId) {
+                window.location.href = "steam://url/CommunityFilePage/" + workshopCollectionId;
+            }
+        };
