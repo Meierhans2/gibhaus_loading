@@ -118,14 +118,14 @@
         <div class="slideshow-container" id="slideshow"></div>
     </div>
 
-    <div class="file-line" id="file-text">Verbindung wird hergestellt...</div>
+    <div class="file-line" id="file-text">Connecting...</div>
 
     <script>
         // ==========================================
         // EINFACHE EINSTELLUNGEN
         // ==========================================
         const ORDNERNAME = "slides/";             
-        const ANZAHL_BILDER = 5;                  
+        const ANZAHL_BILDER = 1;                  
         const WORKSHOP_ID = "3387451124";         
         const ANZEIGE_DAUER = 15000;              
 
@@ -137,7 +137,7 @@
         for (let i = 1; i <= ANZAHL_BILDER; i++) {
             const img = document.createElement('img');
             const nummer = String(i).padStart(3, '0'); 
-            img.src = ORDNERNAME + nummer + ".jpg";
+            img.src = ORDNERNAME + nummer + ".png";
             img.classList.add('slide');
             container.appendChild(img);
         }
@@ -161,7 +161,7 @@
         // GMOD DOWNLOAD ANZEIGE
         // ==========================================
         function DownloadingFile(fileName) {
-            document.getElementById('file-text').innerHTML = "Lade Datei: " + fileName;
+            document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
         }
 
         function SetStatusChanged(status) {
