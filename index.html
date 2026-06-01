@@ -20,7 +20,7 @@
             position: relative;
         }
 
-        /* ===== GPU-BESCHLEUNIGTE BLUTTROPFEN-ANIMATION ===== */
+        /* ===== STATISCHES GPU-BLUT (KEIN REFLOW!) ===== */
         .blood-container {
             position: absolute;
             top: 0; left: 0;
@@ -31,18 +31,18 @@
 
         .drop {
             position: absolute;
-            background: #8a0303; /* Dunkles Blutrot */
+            background: #8a0303;
             border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
             opacity: 0;
-            /* translate3d zwingt die GMod-Chromium-Engine zur GPU-Nutzung */
+            /* Zwingt die Ebenen permanent auf die GPU */
             transform: translate3d(0,0,0) scale(0);
+            animation: splatAndRun linear infinite;
         }
 
-        /* Tropfen-Animation: Spritzen, kurz halten, dann langsam runterlaufen */
         @keyframes splatAndRun {
             0% { transform: translate3d(0,0,0) scale(0); opacity: 0; }
-            5% { transform: translate3d(0,0,0) scale(1); opacity: 0.9; }
-            15% { transform: translate3d(0, 10px, 0) scale(0.95); opacity: 0.9; }
+            3% { transform: translate3d(0,0,0) scale(1); opacity: 0.9; }
+            12% { transform: translate3d(0, 10px, 0) scale(0.95); opacity: 0.9; }
             85% { transform: translate3d(0, 180px, 0) scale(0.6); opacity: 0.4; }
             100% { transform: translate3d(0, 220px, 0) scale(0); opacity: 0; }
         }
@@ -55,7 +55,7 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            z-index: 10; /* Liegt über dem Blut */
+            z-index: 10;
         }
 
         .slideshow-container {
@@ -99,28 +99,35 @@
 </head>
 <body>
 
-    <!-- Hier spritzt das Blut im Hintergrund -->
-    <div class="blood-container" id="blood-screen"></div>
-
-    <!-- Mittiges 16:9 Objekt -->
-    <div class="slideshow-wrapper">
-        <div class="slideshow-container" id="slideshow">
-            <!-- Bilder werden vom Skript geladen -->
-        </div>
+    <!-- Feste Anzahl von Tropfen im HTML vorgerendert (Staffelung über Delay) -->
+    <div class="blood-container">
+        <div class="drop" style="left: 12vw; top: 15vh; width: 12px; height: 16px; animation-duration: 7s; animation-delay: 0s;"></div>
+        <div class="drop" style="left: 28vw; top: 45vh; width: 8px; height: 11px; animation-duration: 9s; animation-delay: 3s;"></div>
+        <div class="drop" style="left: 45vw; top: 10vh; width: 16px; height: 22px; animation-duration: 6s; animation-delay: 1.5s;"></div>
+        <div class="drop" style="left: 72vw; top: 30vh; width: 10px; height: 14px; animation-duration: 8s; animation-delay: 5s;"></div>
+        <div class="drop" style="left: 88vw; top: 55vh; width: 14px; height: 19px; animation-duration: 10s; animation-delay: 2.5s;"></div>
+        
+        <div class="drop" style="left: 5vw; top: 60vh; width: 9px; height: 12px; animation-duration: 8.5s; animation-delay: 4s;"></div>
+        <div class="drop" style="left: 22vw; top: 20vh; width: 15px; height: 21px; animation-duration: 6.5s; animation-delay: 7s;"></div>
+        <div class="drop" style="left: 55vw; top: 50vh; width: 7px; height: 10px; animation-duration: 11s; animation-delay: 0.5s;"></div>
+        <div class="drop" style="left: 80vw; top: 15vh; width: 11px; height: 15px; animation-duration: 7.5s; animation-delay: 6s;"></div>
+        <div class="drop" style="left: 93vw; top: 35vh; width: 13px; height: 18px; animation-duration: 9.5s; animation-delay: 1s;"></div>
     </div>
 
-    <!-- Schlichte graue Statuszeile ganz unten -->
+    <div class="slideshow-wrapper">
+        <div class="slideshow-container" id="slideshow"></div>
+    </div>
+
     <div class="file-line" id="file-text">Verbindung wird hergestellt...</div>
 
     <script>
         // ==========================================
         // EINFACHE EINSTELLUNGEN
         // ==========================================
-        const ORDNERNAME = "slides/";             // Ordner der Bilder (muss mit / enden)
-        const ANZAHL_BILDER = 5;                  // Bildanzahl (001.jpg, 002.jpg, etc.)
-        const WORKSHOP_ID = "3387451124";         // Deine Steam-Workshop ID
-        const ANZEIGE_DAUER = 15000;              // 15 Sekunden Standzeit pro Bild
-
+        const ORDNERNAME = "slides/";             
+        const ANZAHL_BILDER = 5;                  
+        const WORKSHOP_ID = "3387451124";         
+        const ANZEIGE_DAUER = 15000;              
 
         // ==========================================
         // AUTOMATISCHE DIASHOW
@@ -149,47 +156,6 @@
                 slides[aktuellesBild].classList.add('active');
             }
         }, ANZEIGE_DAUER);
-
-
-        // ==========================================
-        // DYNAMISCHE BLUT-SPRITZER (GPU AUTOMATIK)
-        // ==========================================
-        const bloodScreen = document.getElementById('blood-screen');
-        const MAX_TROPFEN = 12; // Maximale Tropfen gleichzeitig, um GMod nicht zu lahmen
-
-        function erzeugeBluttropfen() {
-            // Nur neue Tropfen erzeugen, wenn das Limit nicht überschritten ist
-            if (bloodScreen.childElementCount >= MAX_TROPFEN) return;
-
-            const drop = document.createElement('div');
-            drop.classList.add('drop');
-
-            // Zufällige Größe und Position auf dem Bildschirm berechnen
-            const groesse = Math.floor(Math.random() * 12) + 6; // 6px bis 18px breit
-            const xPos = Math.floor(Math.random() * 95); // 0% bis 95% Breite
-            const yPos = Math.floor(Math.random() * 70); // 0% bis 70% Höhe (nicht zu tief)
-            
-            // Zufällige Dauer, wie schnell das Blut läuft
-            const laufzeit = (Math.random() * 4) + 4; // 4 bis 8 Sekunden
-
-            // CSS-Eigenschaften direkt auf das Element schreiben
-            drop.style.width = groesse + "px";
-            drop.style.height = (groesse * 1.4) + "px"; // Leicht länglich gezerrt
-            drop.style.left = xPos + "vw";
-            drop.style.top = yPos + "vh";
-            drop.style.animation = `splatAndRun ${laufzeit}s ease-in-out forwards`;
-
-            bloodScreen.appendChild(drop);
-
-            // Löscht den Tropfen automatisch aus dem HTML, wenn die Animation vorbei ist
-            setTimeout(() => {
-                drop.remove();
-            }, laufzeit * 1000);
-        }
-
-        // Alle 1,5 Sekunden wird gewürfelt, ob ein neuer Blutspritzer auftaucht
-        setInterval(erzeugeBluttropfen, 1500);
-
 
         // ==========================================
         // GMOD DOWNLOAD ANZEIGE
