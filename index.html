@@ -202,23 +202,40 @@ function DownloadingFile(fileName) {
 
     // Elemente sicher abrufen
     var fileTextEl = document.getElementById('file-text');
-    var debugTextEl = document.getElementById('debug-text');
     var previewImg = document.getElementById('addon-preview');
 
     if (fileTextEl) {
-        fileTextEl.innerHTML = "Downloading: " + fileName;
+        // Säubert die Anzeige von "workshop content '" am Anfang des Textes
+        var anzeigeText = fileName;
+        if (anzeigeText.indexOf("workshop content '") === 0) {
+            anzeigeText = anzeigeText.replace("workshop content '", "");
+            // Falls am Ende ein einsames Anführungszeichen übrig bleibt, entfernen
+            if (anzeigeText.charAt(anzeigeText.length - 1) === "'") {
+                anzeigeText = anzeigeText.slice(0, -1);
+            }
+        }
+        fileTextEl.innerHTML = "Downloading: " + anzeigeText;
     }
-    if (debugTextEl) {
-        debugTextEl.innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
-    }
+    
+    // DEBUG-PART: Nur auskommentiert!
+    // var debugTextEl = document.getElementById('debug-text');
+    // if (debugTextEl) {
+    //     debugTextEl.innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
+    // }
 
     if (previewImg) {
-        previewImg.src = vollerPfad;
-        previewImg.style.display = "block";
+        // Unsichtbarer Hintergrund-Check verhindert, dass jemals ein schwarzer Kasten aufblitzt
+        var imgChecker = new Image();
+        imgChecker.src = vollerPfad;
         
-        // Verhindert das rote "Broken Image" Rechteck, falls Datei fehlt
-        previewImg.onerror = function() {
-            previewImg.style.display = "none";
+        imgChecker.onload = function() {
+            previewImg.src = vollerPfad;
+            previewImg.style.display = "block";
+        };
+        
+        imgChecker.onerror = function() {
+            // Wenn das Bild auf dem Server fehlt, tun wir absolut nichts.
+            // Die letzte erfolgreiche Vorschau bleibt einfach unberührt stehen.
         };
     }
 }
@@ -228,7 +245,6 @@ function SetStatusChanged(status) {
     if (fileTextEl) {
         fileTextEl.innerHTML = status;
     }
-    // ÄNDERUNG: Das Bild wird hier NICHT mehr ausgeblendet, damit es stehen bleibt!
 }
 
 function SetFilesNeeded(needed) {} 
@@ -249,4 +265,3 @@ window.onload = function() {
 
 </body>
 </html>
-
