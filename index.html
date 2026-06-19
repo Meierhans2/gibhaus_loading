@@ -169,39 +169,54 @@
                 slides[aktuellesBild].classList.add('active');
             }
         }, ANZEIGE_DAUER);
-// ==========================================
+/// ==========================================
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
-    if (!fileName) return;
+    if (!fileName || typeof fileName !== "string") return;
 
     let reinerName = fileName;
-    if (fileName.includes("'")) {
-        const parts = fileName.split("'");
+    
+    // Falls ein Anführungszeichen existiert, splitten
+    if (fileName.indexOf("'") !== -1) {
+        var parts = fileName.split("'");
         if (parts.length > 1) {
-            reinerName = parts[1]; // Holt den korrekten Addon-Namen aus dem Array
+            reinerName = parts[1];
         }
+        // Sicheres Entfernen des schließenden Anführungszeichens
         if (reinerName && reinerName.charAt(reinerName.length - 1) === "'") {
             reinerName = reinerName.slice(0, -1);
         }
     } else {
-        reinerName = reinerName.substring(reinerName.lastIndexOf('/') + 1);
-        reinerName = reinerName.substring(reinerName.lastIndexOf('\\') + 1);
+        // Fallback für normale Pfade ohne Anführungszeichen
+        var lastSlash = Math.max(reinerName.lastIndexOf('/'), reinerName.lastIndexOf('\\'));
+        if (lastSlash !== -1) {
+            reinerName = reinerName.substring(lastSlash + 1);
+        }
         reinerName = reinerName.replace(/\.[^/.]+$/, "");
     }
 
-    const sanitizedName = reinerName.replace(/[\\/*?:"<>|]/g, '_').trim();
-    const vollerPfad = "addon_previews/" + sanitizedName + ".jpg";
+    // Ersetzt ungültige Zeichen exakt wie dein Python-Skript
+    var sanitizedName = reinerName.replace(/[\\/*?:"<>|]/g, '_').trim();
+    var vollerPfad = "addon_previews/" + sanitizedName + ".jpg";
 
-    document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
-    document.getElementById('debug-text').innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
+    // Elemente sicher abrufen
+    var fileTextEl = document.getElementById('file-text');
+    var debugTextEl = document.getElementById('debug-text');
+    var previewImg = document.getElementById('addon-preview');
 
-    const previewImg = document.getElementById('addon-preview');
+    if (fileTextEl) {
+        fileTextEl.innerHTML = "Downloading: " + fileName;
+    }
+    if (debugTextEl) {
+        debugTextEl.innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
+    }
+
     if (previewImg) {
         previewImg.src = vollerPfad;
         previewImg.style.display = "block";
         
-        // Falls das Bild fehlt, blenden wir es aus (das letzte erfolgreiche Bild verschwindet)
+        // Verhindert das rote "Broken Image" Rechteck, falls Datei fehlt
         previewImg.onerror = function() {
             previewImg.style.display = "none";
         };
@@ -209,9 +224,27 @@ function DownloadingFile(fileName) {
 }
 
 function SetStatusChanged(status) {
-    document.getElementById('file-text').innerHTML = status;
-    // Kein Ausblenden mehr – das Bild bleibt stehen, bis das nächste geladen wird!
+    var fileTextEl = document.getElementById('file-text');
+    if (fileTextEl) {
+        fileTextEl.innerHTML = status;
+    }
 }
+
+function SetFilesNeeded(needed) {} 
+
+window.onload = function() {
+    if (typeof WORKSHOP_ID !== 'undefined' && WORKSHOP_ID) {
+        window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
+    }
+};
+
+    </script>
+    
+    <!-- Die Debug-Zeile direkt unter dem normalen Text -->
+    <div id="debug-text" style="position: absolute; left: 40px; bottom: 4vh; color: rgba(255,255,255,0.5); font-family: sans-serif; font-size: 14px; z-index: 100;"></div>
+
+    <!-- Addon-Vorschau über der Ladeleiste auf der rechten Seite -->
+    <img id="addon-preview" src="" style="display: none; position: absolute; right: 40px; bottom: 10vh; width: 250px; height: auto; border: 2px solid rgba(255, 0, 60, 0.4); box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;" alt="Addon Vorschau">
 
 </body>
 </html>
