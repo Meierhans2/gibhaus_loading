@@ -173,20 +173,30 @@
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
-    // Sucht nach einer zusammenhängenden Zahl von 8 bis 12 Ziffern (die Workshop-ID)
-    const match = fileName.match(/\d{8,12}/);
+    // Holt alle Zahlen aus dem Dateinamen als Array
+    const matches = fileName.match(/\d+/g);
     const previewImg = document.getElementById('addon-preview');
+    let workshopId = null;
+
+    if (matches) {
+        // Findet die erste Zahl im Namen, die mindestens 8 Stellen lang ist
+        workshopId = matches.find(num => num.length >= 8);
+    }
     
-    if (match && match[0]) {
-        const workshopId = match[0];
+    if (workshopId) {
         const vollerPfad = "addon_previews/" + workshopId + ".jpg";
         
         document.getElementById('file-text').innerHTML = "Downloading: " + fileName + " | Bild-Pfad: " + vollerPfad;
         
         previewImg.src = vollerPfad;
         previewImg.style.display = "block";
+        
+        // Unsichtbar schalten, falls die Bilddatei auf dem Server fehlt
+        previewImg.onerror = function() {
+            previewImg.style.display = "none";
+        };
     } else {
-        document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
+        document.getElementById('file-text').innerHTML = "Downloading: " + fileName + " | Keine gültige ID im Pfad";
         previewImg.style.display = "none";
     }
 }
@@ -194,8 +204,6 @@ function DownloadingFile(fileName) {
 function SetStatusChanged(status) {
     document.getElementById('file-text').innerHTML = status;
     
-    // Wenn GMod den Status ändert (z.B. "Mounting Addons" oder "Workshop Complete"),
-    // blenden wir das letzte Vorschaubild aus.
     if (!status.includes("Downloading")) {
         document.getElementById('addon-preview').style.display = "none";
     }
@@ -215,3 +223,4 @@ window.onload = function() {
 
 </body>
 </html>
+
