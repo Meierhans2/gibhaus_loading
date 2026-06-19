@@ -169,7 +169,7 @@
                 slides[aktuellesBild].classList.add('active');
             }
         }, ANZEIGE_DAUER);
-/// ==========================================
+// ==========================================
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
@@ -228,6 +228,7 @@ function SetStatusChanged(status) {
     if (fileTextEl) {
         fileTextEl.innerHTML = status;
     }
+    // ÄNDERUNG: Das Bild wird hier NICHT mehr ausgeblendet, damit es stehen bleibt!
 }
 
 function SetFilesNeeded(needed) {} 
@@ -248,5 +249,4 @@ window.onload = function() {
 
 </body>
 </html>
-
 
