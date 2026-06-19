@@ -173,22 +173,39 @@
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
+    // Falls kein Name übergeben wird, abbrechen
+    if (!fileName) return;
+
+    // JavaScript-Äquivalent zu deinem Python-Sanitizer:
+    // Ersetzt \ / * ? : " < > | durch _ und schneidet Leerzeichen ab
+    const sanitizedName = fileName.replace(/[\\/*?:"<>|]/g, '_').trim();
+    const vollerPfad = "addon_previews/" + sanitizedName + ".jpg";
+
+    // 1. Normaler Output (unverändert)
+    document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
+
+    // 2. Debug-Output direkt in die Zeile darunter schreiben
+    document.getElementById('debug-text').innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
+
+    // Bild laden und anzeigen
     const previewImg = document.getElementById('addon-preview');
-    
-    // Loggt den Aufruf von DownloadingFile
-    document.getElementById('file-text').innerHTML = "FUNKTION DownloadingFile -> [" + fileName + "]";
-    previewImg.style.display = "none";
+    previewImg.src = vollerPfad;
+    previewImg.style.display = "block";
+
+    // Falls das Bild auf dem Server fehlt, ausblenden um Fehler-Rechtecke zu vermeiden
+    previewImg.onerror = function() {
+        previewImg.style.display = "none";
+    };
 }
 
 function SetStatusChanged(status) {
-    const previewImg = document.getElementById('addon-preview');
+    document.getElementById('file-text').innerHTML = status;
     
-    // Loggt den Aufruf von SetStatusChanged
-    document.getElementById('file-text').innerHTML = "FUNKTION SetStatusChanged -> [" + status + "]";
+    // Debug-Zeile bei Statuswechsel leeren
+    document.getElementById('debug-text').innerHTML = "";
     
-    // Verhindert das Ausblenden während wir testen
-    if (!status.includes("Downloading") && !status.includes("Extracting") && !status.includes("Mounting")) {
-        // Hier im Testlauf erst mal deaktiviert, um nichts vorzeitig zu löschen
+    if (!status.includes("Downloading")) {
+        document.getElementById('addon-preview').style.display = "none";
     }
 }
 
@@ -200,11 +217,15 @@ window.onload = function() {
     }
 };
 
-
     </script>
+    
+    <!-- Die neue Debug-Zeile direkt unter deinem normalen Text -->
+    <div id="debug-text" style="position: absolute; left: 40px; bottom: 4vh; color: rgba(255,255,255,0.5); font-family: sans-serif; font-size: 14px; z-index: 100;"></div>
+
     <!-- Addon-Vorschau über der Ladeleiste auf der rechten Seite -->
     <img id="addon-preview" src="" style="display: none; position: absolute; right: 40px; bottom: 10vh; width: 250px; height: auto; border: 2px solid rgba(255, 0, 60, 0.4); box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;" alt="Addon Vorschau">
 
 </body>
 </html>
+
 
