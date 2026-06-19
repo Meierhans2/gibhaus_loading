@@ -170,41 +170,17 @@
             }
         }, ANZEIGE_DAUER);
 // ==========================================
-// AUTOMATISCHER BILDER PRELOADER (GitHub Pages)
-// ==========================================
-// In GMod-Chromium darf fetch die restliche Ausführung bei Fehlern nicht blockieren
-try {
-    fetch('addon_previews/filenames.txt')
-        .then(function(response) { return response.text(); })
-        .then(function(data) {
-            if (!data) return;
-            const bilder = data.split('\n');
-            bilder.forEach(function(bildName) {
-                const gesaeubert = bildName.trim();
-                if (gesaeubert !== "") {
-                    const img = new Image();
-                    img.src = "addon_previews/" + gesaeubert;
-                }
-            });
-        })
-        .catch(function(err) { console.log("filenames.txt nicht gefunden."); });
-} catch(e) {
-    console.log("Preload fehlgeschlagen, GMod blockiert Fetch.");
-}
-
-// ==========================================
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
     if (!fileName) return;
 
     let reinerName = fileName;
-    if (fileName.indexOf("'") !== -1) {
+    if (fileName.includes("'")) {
         const parts = fileName.split("'");
         if (parts.length > 1) {
             reinerName = parts[1];
         }
-        // KORREKTUR: .endsWith() durch GMod-sichere Methode ersetzt (Absturzsicherung)
         if (reinerName && reinerName.charAt(reinerName.length - 1) === "'") {
             reinerName = reinerName.slice(0, -1);
         }
@@ -217,26 +193,26 @@ function DownloadingFile(fileName) {
     const sanitizedName = reinerName.replace(/[\\/*?:"<>|]/g, '_').trim();
     const vollerPfad = "addon_previews/" + sanitizedName + ".jpg";
 
-    const fileTextEl = document.getElementById('file-text');
-    const debugTextEl = document.getElementById('debug-text');
+    document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
+    document.getElementById('debug-text').innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
+
+    // KORREKTUR: Zuweisung erfolgt SOFORT, ohne tempImg, um Netzwerk-Deadlocks zu verhindern
     const previewImg = document.getElementById('addon-preview');
-
-    if (fileTextEl) fileTextEl.innerHTML = "Downloading: " + fileName;
-    if (debugTextEl) debugTextEl.innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
-
     if (previewImg) {
-        const tempImg = new Image();
-        tempImg.src = vollerPfad;
-        tempImg.onload = function() {
-            previewImg.src = vollerPfad;
-            previewImg.style.display = "block";
+        previewImg.src = vollerPfad;
+        previewImg.style.display = "block";
+        
+        // Falls genau dieses Bild fehlt, blenden wir es aus (das alte Bild verschwindet, kein rotes Rechteck)
+        previewImg.onerror = function() {
+            previewImg.style.display = "none";
         };
     }
 }
 
 function SetStatusChanged(status) {
-    const fileTextEl = document.getElementById('file-text');
-    if (fileTextEl) fileTextEl.innerHTML = status;
+    document.getElementById('file-text').innerHTML = status;
+    
+    // KORREKTUR: Kein Ausblenden mehr bei Statusänderungen! Das Bild bleibt stehen.
 }
 
 function SetFilesNeeded(needed) {} 
@@ -257,4 +233,5 @@ window.onload = function() {
 
 </body>
 </html>
+
 
