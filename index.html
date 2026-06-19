@@ -148,115 +148,118 @@
 
     <div class="file-line" id="file-text">Connecting...</div>
 
-    <script>
-        // ==========================================
-        // EINFACHE EINSTELLUNGEN
-        // ==========================================
-        const ORDNERNAME = "slides/";             
-        const ANZAHL_BILDER = 7;                  
-        const WORKSHOP_ID = "3387451124";         
-        const ANZEIGE_DAUER = 15000;              
+   <script type="text/javascript">
+    // ==========================================
+    // CONFIGURATION (UMGESTELLT AUF ES5 VAR)
+    // ==========================================
+    var ORDNERNAME = "slides/";
+    var ANZAHL_BILDER = 7;
+    var ANZEIGE_DAUER = 15000;
 
-        // ==========================================
-        // AUTOMATISCHE DIASHOW
-        // ==========================================
-        const container = document.getElementById('slideshow');
-        
-        for (let i = 1; i <= ANZAHL_BILDER; i++) {
-            const img = document.createElement('img');
-            const nummer = String(i).padStart(3, '0'); 
-            img.src = ORDNERNAME + nummer + ".jpg";
-            img.classList.add('slide');
-            container.appendChild(img);
-        }
+    // Helper-Funktion: Ersetzt das moderne padStart, das in Awesomium abstürzt
+    function padZero(num, size) {
+        var s = num + "";
+        while (s.length < size) s = "0" + s;
+        return s;
+    }
 
-        const slides = document.querySelectorAll('.slide');
-        let aktuellesBild = Math.floor(Math.random() * ANZAHL_BILDER);
-        
-        if (slides.length > 0) {
-            slides[aktuellesBild].classList.add('active');
-        }
+    // Bilder-Array befüllen (Klassische for-Schleife)
+    var bilder = [];
+    for (var i = 1; i <= ANZAHL_BILDER; i++) {
+        bilder.push(ORDNERNAME + padZero(i, 3) + ".jpg");
+    }
 
-        setInterval(() => {
-            if (slides.length > 0) {
-                slides[aktuellesBild].classList.remove('active');
-                aktuellesBild = (aktuellesBild + 1) % slides.length;
-                slides[aktuellesBild].classList.add('active');
-            }
-        }, ANZEIGE_DAUER);
+    var aktuellesBildIndex = 0;
+    var hintergrund1 = document.getElementById('hintergrund1');
+    var hintergrund2 = document.getElementById('hintergrund2');
+    var aktuellesElement = hintergrund1;
+
+    function wechsleBild() {
+        var naechstesBildIndex = (aktuellesBildIndex + 1) % bilder.length;
+        var naechstesElement = (aktuellesElement === hintergrund1) ? hintergrund2 : hintergrund1;
+
+        naechstesElement.style.backgroundImage = "url('" + bilder[naechstesBildIndex] + "')";
+        naechstesElement.classList.add('aktiv');
+        aktuellesElement.classList.remove('aktiv');
+
+        aktuellesElement = naechstesElement;
+        aktuellesIndex = naechstesBildIndex; // Korrektur des globalen Trackings
+        aktuellesBildIndex = naechstesBildIndex;
+    }
+
+    // Slideshow starten
+    setInterval(wechsleBild, ANZEIGE_DAUER);
+
 
     // ==========================================
     // GMOD DOWNLOAD ANZEIGE & STICKER SYSTEM
     // ==========================================
-    let stickerIndex = 0;
-    const MAX_STICKERS = 14; // Maximum stickers on screen at once
-    const activeStickers = [];
 
-    function DownloadingFile( fileName ) {
-        document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
-    
-        // Check if the file belongs to a workshop item
-        if (fileName.indexOf("workshop/") !== -1) {
-            let match = fileName.match(/\d+/);
-            if (match) {
-                let addonId = match[0];
-                spawnAddonSticker(addonId);
-            }
+    // EXPLIZITE WINDOW-BINDUNG: Zwingend erforderlich für native Engine-Aufrufe
+    window.DownloadingFile = function(fileName) {
+        var statusText = "Lade Datei herunter: " + fileName;
+        document.getElementById('file-text').innerHTML = statusText;
+        
+        // Sticker spawnen bei bestimmten Dateitypen
+        if (fileName.indexOf(".mdl") !== -1) {
+            createSticker("model");
+        } else if (fileName.indexOf(".vtf") !== -1 || fileName.indexOf(".vmt") !== -1) {
+            createSticker("texture");
+        } else if (fileName.indexOf(".mp3") !== -1 || fileName.indexOf(".wav") !== -1) {
+            createSticker("sound");
+        }
+    };
+
+    window.SetStatusChanged = function(status) {
+        document.getElementById('file-text').innerHTML = status;
+    };
+
+    // Sticker Logik (Komplett bereinigt von Arrow-Functions & Let/Const)
+    function createSticker(type) {
+        var container = document.getElementById('sticker-container');
+        if (!container) return;
+
+        var sticker = document.createElement('div');
+        sticker.className = 'sticker ' + type;
+        
+        // Zufällige Rotation und Position innerhalb des Containers
+        var rotation = Math.floor(Math.random() * 40) - 20; // -20deg bis 20deg
+        var posX = Math.floor(Math.random() * 80) + 10;     // 10% bis 90%
+        var posY = Math.floor(Math.random() * 80) + 10;     // 10% bis 90%
+
+        sticker.style.left = posX + '%';
+        sticker.style.top = posY + '%';
+        sticker.style.transform = 'translate(-50%, -50%) rotate(' + rotation + 'deg)';
+
+        // Text-Inhalt je nach Typ zuweisen
+        if (type === "model") {
+            sticker.innerHTML = "📦 MODEL";
+        } else if (type === "texture") {
+            sticker.innerHTML = "🎨 TEXTURE";
+        } else if (type === "sound") {
+            sticker.innerHTML = "🎵 AUDIO";
+        }
+
+        container.appendChild(sticker);
+
+        // Bluteffekt triggern bei jedem 5. Sticker (Zufall)
+        if (Math.random() < 0.2) {
+            triggerBloodSplatter();
         }
     }
 
-    function spawnAddonSticker(addonId) {
-        const zone = document.getElementById('stickers-zone');
-        if (!zone) return;
+    function triggerBloodSplatter() {
+        var overlay = document.getElementById('blood-overlay');
+        if (!overlay) return;
 
-        // Limit active stickers to prevent performance drop or complete UI clutter
-        if (activeStickers.length >= MAX_STICKERS) {
-            let oldest = activeStickers.shift();
-            if (oldest) {
-                oldest.style.transform = "scale(0) rotate(0deg)";
-                oldest.style.opacity = "0";
-                setTimeout(() => oldest.remove(), 500);
-            }
-        }
-
-        const img = document.createElement('img');
-        // Loads from your folder containing your freshly scraped imagery
-        img.src = "addon_previews/" + addonId + ".jpg"; 
-        img.classList.add('addon-sticker');
-
-        // Fallback: If image fails to load (missing preview), just don't display it
-        img.onerror = function() { this.remove(); };
-
-        // Clockwise pathing distribution math based on stickerIndex
-        let angleStep = (stickerIndex % MAX_STICKERS) / MAX_STICKERS * 2 * Math.PI;
-        stickerIndex++;
-
-        // Calculate position along an elliptical path around center of screen
-        let x = 50 + Math.cos(angleStep) * 40; // percentage based placement
-        let y = 45 + Math.sin(angleStep) * 35;
-
-        // Apply specific offsets to clear the center slideshow strictly
-        img.style.left = x + "%";
-        img.style.top = y + "%";
-
-        // Add visual imperfection (sticker rotation angle twist)
-        let randomRotation = Math.floor(Math.random() * 30) - 15; // -15deg to +15deg
-
-        zone.appendChild(img);
-        activeStickers.push(img);
-    
-        // Trigger visual pop animation via Microtask queue frame bounce
-        setTimeout(() => {
-            img.classList.add('spawned');
-            img.style.transform = `translate(-50%, -50%) scale(1) rotate(${randomRotation}deg)`;
-        }, 50);
+        overlay.style.opacity = '1';
+        
+        // Timeout in ES5
+        setTimeout(function() {
+            overlay.style.opacity = '0';
+        }, 500);
     }
+</script>
 
-function SetStatusChanged( status ) {
-    document.getElementById('file-text').innerHTML = status;
-}
-
-        };
-    </script>
 </body>
 </html>
