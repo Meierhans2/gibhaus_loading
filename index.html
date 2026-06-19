@@ -95,19 +95,18 @@
             margin-bottom: 20px;
             z-index: 10;
         }
-        /* ===== ADDON VORSCHAU UNTEN LINKS ===== */
+      /* ===== ADDON VORSCHAU UNTEN RECHTS ===== */
         #addon-preview {
             position: absolute;
-            left: 40px;          /* Gleicher Abstand wie dein Body-Padding */
+            right: 40px;         /* Verschiebt das Bild auf die rechte Seite */
             bottom: 12vh;        /* Platziert das Bild ca. 10-12% über dem unteren Bildschirmrand */
             width: 250px;        /* Gewünschte Breite der Vorschau */
             height: auto;
-            border: 2px solid rgba(255, 0, 60, 0.6);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
             z-index: 100;
             border-radius: 4px;
             object-fit: cover;
-        }
+}
+
 
     </style>
 </head>
@@ -210,8 +209,9 @@ window.onload = function() {
 };
 
     </script>
-    <!-- Addon-Vorschau in der linken unteren Ecke -->
-<img id="addon-preview" src="" style="display: none;" alt="Addon Preview">
+    <!-- Addon-Vorschau über der Ladeleiste auf der rechten Seite -->
+    <img id="addon-preview" src="" style="display: none; position: absolute; right: 40px; bottom: 10vh; width: 250px; height: auto; border: 2px solid rgba(255, 0, 60, 0.4); box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;" alt="Addon Vorschau">
+
 
 </body>
 </html>
