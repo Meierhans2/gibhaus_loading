@@ -173,15 +173,14 @@
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
-    // RegEx sucht nach einer reinen Zahlenfolge (der Workshop-ID) im Dateinamen
-    const match = fileName.match(/\d+/);
+    // Sucht nach einer zusammenhängenden Zahl von 8 bis 12 Ziffern (die Workshop-ID)
+    const match = fileName.match(/\d{8,12}/);
     const previewImg = document.getElementById('addon-preview');
     
     if (match && match[0]) {
         const workshopId = match[0];
         const vollerPfad = "addon_previews/" + workshopId + ".jpg";
         
-        // Zeigt Download-Datei und den exakten Bild-Ladepfad im grauen Text unten an
         document.getElementById('file-text').innerHTML = "Downloading: " + fileName + " | Bild-Pfad: " + vollerPfad;
         
         previewImg.src = vollerPfad;
@@ -216,4 +215,3 @@ window.onload = function() {
 
 </body>
 </html>
-
