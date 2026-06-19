@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Gibhaus Loading</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            background: #050000; 
+            color: #fff; 
+            font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        /* ===== STATISCHES GPU-BLUT (KEIN REFLOW!) ===== */
+        .blood-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .drop {
+            position: absolute;
+            background: #8a0303;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            opacity: 0;
+            /* Zwingt die Ebenen permanent auf die GPU */
+            transform: translate3d(0,0,0) scale(0);
+            animation: splatAndRun linear infinite;
+        }
+
+        @keyframes splatAndRun {
+            0% { transform: translate3d(0,0,0) scale(0); opacity: 0; }
+            3% { transform: translate3d(0,0,0) scale(1); opacity: 0.9; }
+            12% { transform: translate3d(0, 10px, 0) scale(0.95); opacity: 0.9; }
+            85% { transform: translate3d(0, 180px, 0) scale(0.6); opacity: 0.4; }
+            100% { transform: translate3d(0, 220px, 0) scale(0); opacity: 0; }
+        }
+
+        /* ===== 16:9 DIASHOW ===== */
+        .slideshow-wrapper {
+            margin-top: auto;
+            margin-bottom: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .slideshow-container {
+            width: 65vw; 
+            height: 36.56vw; 
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            border: 2px solid rgba(255, 0, 60, 0.4);
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+        }
+
+        .slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out; 
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        /* ===== GRAUE TEXTANZEIGE UNTEN ===== */
+        .file-line {
+            font-size: 20px;
+            font-weight: 500;
+            color: #888888;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90vw;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+        /* ===== WORKSHOP STICKERS (CLOCKWISE PLACEMENT) ===== */
+        .sticker-container {
+            position: absolute;
+            top: 5vh;
+            left: 5vw;
+            width: 90vw;
+            height: 70vh; /* Keeps it strictly above the lower text line */
+            pointer-events: none;
+            z-index: 5; /* Behind blood drips, above slideshow background */
+        }
+
+        .addon-sticker {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+            opacity: 0;
+            transform: scale(0) rotate(0deg);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        }
+
+        .addon-sticker.spawned {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Feste Anzahl von Tropfen im HTML vorgerendert (Staffelung über Delay) -->
+    <div class="blood-container">
+        <div class="drop" style="left: 12vw; top: 15vh; width: 12px; height: 16px; animation-duration: 7s; animation-delay: 0s;"></div>
+        <div class="drop" style="left: 28vw; top: 45vh; width: 8px; height: 11px; animation-duration: 9s; animation-delay: 3s;"></div>
+        <div class="drop" style="left: 45vw; top: 10vh; width: 16px; height: 22px; animation-duration: 6s; animation-delay: 1.5s;"></div>
+        <div class="drop" style="left: 72vw; top: 30vh; width: 10px; height: 14px; animation-duration: 8s; animation-delay: 5s;"></div>
+        <div class="drop" style="left: 88vw; top: 55vh; width: 14px; height: 19px; animation-duration: 10s; animation-delay: 2.5s;"></div>
+        
+        <div class="drop" style="left: 5vw; top: 60vh; width: 9px; height: 12px; animation-duration: 8.5s; animation-delay: 4s;"></div>
+        <div class="drop" style="left: 22vw; top: 20vh; width: 15px; height: 21px; animation-duration: 6.5s; animation-delay: 7s;"></div>
+        <div class="drop" style="left: 55vw; top: 50vh; width: 7px; height: 10px; animation-duration: 11s; animation-delay: 0.5s;"></div>
+        <div class="drop" style="left: 80vw; top: 15vh; width: 11px; height: 15px; animation-duration: 7.5s; animation-delay: 6s;"></div>
+        <div class="drop" style="left: 93vw; top: 35vh; width: 13px; height: 18px; animation-duration: 9.5s; animation-delay: 1s;"></div>
+    </div>
+
+    <div class="sticker-container" id="stickers-zone"></div>
+    <div class="slideshow-wrapper">
+
+        <div class="slideshow-container" id="slideshow"></div>
+    </div>
+
+    <div class="file-line" id="file-text">Connecting...</div>
+
+   <script type="text/javascript">
+    // ==========================================
+    // CONFIGURATION (UMGESTELLT AUF ES5 VAR)
+    // ==========================================
+    var ORDNERNAME = "slides/";
+    var ANZAHL_BILDER = 7;
+    var ANZEIGE_DAUER = 15000;
+
+    // Helper-Funktion: Ersetzt das moderne padStart, das in Awesomium abstürzt
+    function padZero(num, size) {
+        var s = num + "";
+        while (s.length < size) s = "0" + s;
+        return s;
+    }
+
+    // Bilder-Array befüllen (Klassische for-Schleife)
+    var bilder = [];
+    for (var i = 1; i <= ANZAHL_BILDER; i++) {
+        bilder.push(ORDNERNAME + padZero(i, 3) + ".jpg");
+    }
+
+    var aktuellesBildIndex = 0;
+    var hintergrund1 = document.getElementById('hintergrund1');
+    var hintergrund2 = document.getElementById('hintergrund2');
+    var aktuellesElement = hintergrund1;
+
+    function wechsleBild() {
+        var naechstesBildIndex = (aktuellesBildIndex + 1) % bilder.length;
+        var naechstesElement = (aktuellesElement === hintergrund1) ? hintergrund2 : hintergrund1;
+
+        naechstesElement.style.backgroundImage = "url('" + bilder[naechstesBildIndex] + "')";
+        naechstesElement.classList.add('aktiv');
+        aktuellesElement.classList.remove('aktiv');
+
+        aktuellesElement = naechstesElement;
+        aktuellesIndex = naechstesBildIndex; // Korrektur des globalen Trackings
+        aktuellesBildIndex = naechstesBildIndex;
+    }
+
+    // Slideshow starten
+    setInterval(wechsleBild, ANZEIGE_DAUER);
+
+
+    // ==========================================
+    // GMOD DOWNLOAD ANZEIGE & STICKER SYSTEM
+    // ==========================================
+
+    // EXPLIZITE WINDOW-BINDUNG: Zwingend erforderlich für native Engine-Aufrufe
+    window.DownloadingFile = function(fileName) {
+        var statusText = "Lade Datei herunter: " + fileName;
+        document.getElementById('file-text').innerHTML = statusText;
+        
+        // Sticker spawnen bei bestimmten Dateitypen
+        if (fileName.indexOf(".mdl") !== -1) {
+            createSticker("model");
+        } else if (fileName.indexOf(".vtf") !== -1 || fileName.indexOf(".vmt") !== -1) {
+            createSticker("texture");
+        } else if (fileName.indexOf(".mp3") !== -1 || fileName.indexOf(".wav") !== -1) {
+            createSticker("sound");
+        }
+    };
+
+    window.SetStatusChanged = function(status) {
+        document.getElementById('file-text').innerHTML = status;
+    };
+
+    // Sticker Logik (Komplett bereinigt von Arrow-Functions & Let/Const)
+    function createSticker(type) {
+        var container = document.getElementById('sticker-container');
+        if (!container) return;
+
+        var sticker = document.createElement('div');
+        sticker.className = 'sticker ' + type;
+        
+        // Zufällige Rotation und Position innerhalb des Containers
+        var rotation = Math.floor(Math.random() * 40) - 20; // -20deg bis 20deg
+        var posX = Math.floor(Math.random() * 80) + 10;     // 10% bis 90%
+        var posY = Math.floor(Math.random() * 80) + 10;     // 10% bis 90%
+
+        sticker.style.left = posX + '%';
+        sticker.style.top = posY + '%';
+        sticker.style.transform = 'translate(-50%, -50%) rotate(' + rotation + 'deg)';
+
+        // Text-Inhalt je nach Typ zuweisen
+        if (type === "model") {
+            sticker.innerHTML = "📦 MODEL";
+        } else if (type === "texture") {
+            sticker.innerHTML = "🎨 TEXTURE";
+        } else if (type === "sound") {
+            sticker.innerHTML = "🎵 AUDIO";
+        }
+
+        container.appendChild(sticker);
+
+        // Bluteffekt triggern bei jedem 5. Sticker (Zufall)
+        if (Math.random() < 0.2) {
+            triggerBloodSplatter();
+        }
+    }
+
+    function triggerBloodSplatter() {
+        var overlay = document.getElementById('blood-overlay');
+        if (!overlay) return;
+
+        overlay.style.opacity = '1';
+        
+        // Timeout in ES5
+        setTimeout(function() {
+            overlay.style.opacity = '0';
+        }, 500);
+    }
+</script>
+
+</body>
+</html>
