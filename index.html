@@ -175,14 +175,23 @@
 function DownloadingFile(fileName) {
     if (!fileName) return;
 
-    // 1. Extrahiert nur den reinen Dateinamen nach dem letzten Slash oder Backslash
-    let reinerName = fileName.substring(fileName.lastIndexOf('/') + 1);
-    reinerName = reinerName.substring(reinerName.lastIndexOf('\\') + 1);
+    // 1. Holt nur den Inhalt zwischen oder nach den einfachen Anführungszeichen '
+    let reinerName = fileName;
+    if (fileName.includes("'")) {
+        // Splittet beim ersten ' und nimmt den Teil danach
+        reinerName = fileName.split("'")[1];
+        // Falls am Ende noch ein ' steht, entfernen
+        if (reinerName.endsWith("'")) {
+            reinerName = reinerName.slice(0, -1);
+        }
+    } else {
+        // Fallback: Falls keine ' da sind, wie vorher Pfade und Endungen abschneiden
+        reinerName = reinerName.substring(reinerName.lastIndexOf('/') + 1);
+        reinerName = reinerName.substring(reinerName.lastIndexOf('\\') + 1);
+        reinerName = reinerName.replace(/\.[^/.]+$/, "");
+    }
 
-    // 2. Entfernt typische GMod-Dateiendungen (.gma, .bsp, .mdl etc.) am Ende
-    reinerName = reinerName.replace(/\.[^/.]+$/, "");
-
-    // 3. JavaScript-Sanitizer (wie dein Python-Skript)
+    // 2. JavaScript-Sanitizer (wie dein Python-Skript)
     const sanitizedName = reinerName.replace(/[\\/*?:"<>|]/g, '_').trim();
     const vollerPfad = "addon_previews/" + sanitizedName + ".jpg";
 
@@ -202,8 +211,6 @@ function DownloadingFile(fileName) {
 
 function SetStatusChanged(status) {
     document.getElementById('file-text').innerHTML = status;
-    
-    // KORREKTUR: Debug-Text wird hier NICHT mehr gelöscht, damit er stehen bleibt!
     
     if (!status.includes("Downloading")) {
         document.getElementById('addon-preview').style.display = "none";
@@ -228,4 +235,3 @@ window.onload = function() {
 
 </body>
 </html>
-
