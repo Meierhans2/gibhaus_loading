@@ -172,19 +172,25 @@
 // ==========================================
 // AUTOMATISCHER BILDER PRELOADER (GitHub Pages)
 // ==========================================
-fetch('addon_previews/filenames.txt')
-    .then(response => response.text())
-    .then(data => {
-        const bilder = data.split('\n');
-        bilder.forEach(function(bildName) {
-            const gesaeubert = bildName.trim();
-            if (gesaeubert !== "") {
-                const img = new Image();
-                img.src = "addon_previews/" + gesaeubert;
-            }
-        });
-    })
-    .catch(err => console.log("filenames.txt nicht gefunden."));
+// In GMod-Chromium darf fetch die restliche Ausführung bei Fehlern nicht blockieren
+try {
+    fetch('addon_previews/filenames.txt')
+        .then(function(response) { return response.text(); })
+        .then(function(data) {
+            if (!data) return;
+            const bilder = data.split('\n');
+            bilder.forEach(function(bildName) {
+                const gesaeubert = bildName.trim();
+                if (gesaeubert !== "") {
+                    const img = new Image();
+                    img.src = "addon_previews/" + gesaeubert;
+                }
+            });
+        })
+        .catch(function(err) { console.log("filenames.txt nicht gefunden."); });
+} catch(e) {
+    console.log("Preload fehlgeschlagen, GMod blockiert Fetch.");
+}
 
 // ==========================================
 // GMOD DOWNLOAD ANZEIGE
@@ -193,10 +199,14 @@ function DownloadingFile(fileName) {
     if (!fileName) return;
 
     let reinerName = fileName;
-    if (fileName.includes("'")) {
+    if (fileName.indexOf("'") !== -1) {
         const parts = fileName.split("'");
         if (parts.length > 1) {
             reinerName = parts[1];
+        }
+        // KORREKTUR: .endsWith() durch GMod-sichere Methode ersetzt (Absturzsicherung)
+        if (reinerName && reinerName.charAt(reinerName.length - 1) === "'") {
+            reinerName = reinerName.slice(0, -1);
         }
     } else {
         reinerName = reinerName.substring(reinerName.lastIndexOf('/') + 1);
@@ -207,23 +217,26 @@ function DownloadingFile(fileName) {
     const sanitizedName = reinerName.replace(/[\\/*?:"<>|]/g, '_').trim();
     const vollerPfad = "addon_previews/" + sanitizedName + ".jpg";
 
-    document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
-    document.getElementById('debug-text').innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
-
+    const fileTextEl = document.getElementById('file-text');
+    const debugTextEl = document.getElementById('debug-text');
     const previewImg = document.getElementById('addon-preview');
-    
-    // Prüft im Hintergrund ob das Bild existiert, bevor es angezeigt wird.
-    // Dadurch bleibt das alte Bild stehen, falls das neue fehlt.
-    const tempImg = new Image();
-    tempImg.src = vollerPfad;
-    tempImg.onload = function() {
-        previewImg.src = vollerPfad;
-        previewImg.style.display = "block";
-    };
+
+    if (fileTextEl) fileTextEl.innerHTML = "Downloading: " + fileName;
+    if (debugTextEl) debugTextEl.innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
+
+    if (previewImg) {
+        const tempImg = new Image();
+        tempImg.src = vollerPfad;
+        tempImg.onload = function() {
+            previewImg.src = vollerPfad;
+            previewImg.style.display = "block";
+        };
+    }
 }
 
 function SetStatusChanged(status) {
-    document.getElementById('file-text').innerHTML = status;
+    const fileTextEl = document.getElementById('file-text');
+    if (fileTextEl) fileTextEl.innerHTML = status;
 }
 
 function SetFilesNeeded(needed) {} 
@@ -244,3 +257,4 @@ window.onload = function() {
 
 </body>
 </html>
+
