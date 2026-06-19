@@ -175,20 +175,20 @@
 function DownloadingFile(fileName) {
     const previewImg = document.getElementById('addon-preview');
     
-    // Gibt den Dateinamen komplett ungefiltert aus
-    document.getElementById('file-text').innerHTML = "Roher GMod-Dateiname: [" + fileName + "]";
-    
-    // Bild bleibt vorerst aus, bis wir den echten String kennen
+    // Loggt den Aufruf von DownloadingFile
+    document.getElementById('file-text').innerHTML = "FUNKTION DownloadingFile -> [" + fileName + "]";
     previewImg.style.display = "none";
 }
 
-
-
 function SetStatusChanged(status) {
-    document.getElementById('file-text').innerHTML = status;
+    const previewImg = document.getElementById('addon-preview');
     
-    if (!status.includes("Downloading")) {
-        document.getElementById('addon-preview').style.display = "none";
+    // Loggt den Aufruf von SetStatusChanged
+    document.getElementById('file-text').innerHTML = "FUNKTION SetStatusChanged -> [" + status + "]";
+    
+    // Verhindert das Ausblenden während wir testen
+    if (!status.includes("Downloading") && !status.includes("Extracting") && !status.includes("Mounting")) {
+        // Hier im Testlauf erst mal deaktiviert, um nichts vorzeitig zu löschen
     }
 }
 
@@ -199,6 +199,7 @@ window.onload = function() {
         window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
     }
 };
+
 
     </script>
     <!-- Addon-Vorschau über der Ladeleiste auf der rechten Seite -->
