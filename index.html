@@ -173,19 +173,21 @@
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
-    document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
-    
     // RegEx sucht nach einer reinen Zahlenfolge (der Workshop-ID) im Dateinamen
     const match = fileName.match(/\d+/);
     const previewImg = document.getElementById('addon-preview');
     
     if (match && match[0]) {
         const workshopId = match[0];
-        // Setzt den Pfad zum Bild im Unterordner "addon_previews/"
-        previewImg.src = "addon_previews/" + workshopId + ".jpg";
+        const vollerPfad = "addon_previews/" + workshopId + ".jpg";
+        
+        // Zeigt Download-Datei und den exakten Bild-Ladepfad im grauen Text unten an
+        document.getElementById('file-text').innerHTML = "Downloading: " + fileName + " | Bild-Pfad: " + vollerPfad;
+        
+        previewImg.src = vollerPfad;
         previewImg.style.display = "block";
     } else {
-        // Falls es sich um Standarddateien (Maps/Moneys/Lua) handelt, blende das Bild aus
+        document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
         previewImg.style.display = "none";
     }
 }
@@ -212,6 +214,6 @@ window.onload = function() {
     <!-- Addon-Vorschau über der Ladeleiste auf der rechten Seite -->
     <img id="addon-preview" src="" style="display: none; position: absolute; right: 40px; bottom: 10vh; width: 250px; height: auto; border: 2px solid rgba(255, 0, 60, 0.4); box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;" alt="Addon Vorschau">
 
-
 </body>
 </html>
+
