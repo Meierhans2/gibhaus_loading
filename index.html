@@ -173,18 +173,21 @@
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
-    // Falls kein Name übergeben wird, abbrechen
     if (!fileName) return;
 
-    // JavaScript-Äquivalent zu deinem Python-Sanitizer:
-    // Ersetzt \ / * ? : " < > | durch _ und schneidet Leerzeichen ab
-    const sanitizedName = fileName.replace(/[\\/*?:"<>|]/g, '_').trim();
+    // 1. Extrahiert nur den reinen Dateinamen nach dem letzten Slash oder Backslash
+    let reinerName = fileName.substring(fileName.lastIndexOf('/') + 1);
+    reinerName = reinerName.substring(reinerName.lastIndexOf('\\') + 1);
+
+    // 2. Entfernt typische GMod-Dateiendungen (.gma, .bsp, .mdl etc.) am Ende
+    reinerName = reinerName.replace(/\.[^/.]+$/, "");
+
+    // 3. JavaScript-Sanitizer (wie dein Python-Skript)
+    const sanitizedName = reinerName.replace(/[\\/*?:"<>|]/g, '_').trim();
     const vollerPfad = "addon_previews/" + sanitizedName + ".jpg";
 
-    // 1. Normaler Output (unverändert)
+    // Textausgaben
     document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
-
-    // 2. Debug-Output direkt in die Zeile darunter schreiben
     document.getElementById('debug-text').innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
 
     // Bild laden und anzeigen
@@ -192,7 +195,6 @@ function DownloadingFile(fileName) {
     previewImg.src = vollerPfad;
     previewImg.style.display = "block";
 
-    // Falls das Bild auf dem Server fehlt, ausblenden um Fehler-Rechtecke zu vermeiden
     previewImg.onerror = function() {
         previewImg.style.display = "none";
     };
@@ -201,8 +203,7 @@ function DownloadingFile(fileName) {
 function SetStatusChanged(status) {
     document.getElementById('file-text').innerHTML = status;
     
-    // Debug-Zeile bei Statuswechsel leeren
-    document.getElementById('debug-text').innerHTML = "";
+    // KORREKTUR: Debug-Text wird hier NICHT mehr gelöscht, damit er stehen bleibt!
     
     if (!status.includes("Downloading")) {
         document.getElementById('addon-preview').style.display = "none";
@@ -227,5 +228,4 @@ window.onload = function() {
 
 </body>
 </html>
-
 
