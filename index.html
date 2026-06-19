@@ -179,7 +179,7 @@ function DownloadingFile(fileName) {
     if (fileName.includes("'")) {
         const parts = fileName.split("'");
         if (parts.length > 1) {
-            reinerName = parts[1];
+            reinerName = parts[1]; // Holt den korrekten Addon-Namen aus dem Array
         }
         if (reinerName && reinerName.charAt(reinerName.length - 1) === "'") {
             reinerName = reinerName.slice(0, -1);
@@ -196,13 +196,12 @@ function DownloadingFile(fileName) {
     document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
     document.getElementById('debug-text').innerHTML = "Gesuchter Bild-Pfad: " + vollerPfad;
 
-    // KORREKTUR: Zuweisung erfolgt SOFORT, ohne tempImg, um Netzwerk-Deadlocks zu verhindern
     const previewImg = document.getElementById('addon-preview');
     if (previewImg) {
         previewImg.src = vollerPfad;
         previewImg.style.display = "block";
         
-        // Falls genau dieses Bild fehlt, blenden wir es aus (das alte Bild verschwindet, kein rotes Rechteck)
+        // Falls das Bild fehlt, blenden wir es aus (das letzte erfolgreiche Bild verschwindet)
         previewImg.onerror = function() {
             previewImg.style.display = "none";
         };
@@ -211,25 +210,8 @@ function DownloadingFile(fileName) {
 
 function SetStatusChanged(status) {
     document.getElementById('file-text').innerHTML = status;
-    
-    // KORREKTUR: Kein Ausblenden mehr bei Statusänderungen! Das Bild bleibt stehen.
+    // Kein Ausblenden mehr – das Bild bleibt stehen, bis das nächste geladen wird!
 }
-
-function SetFilesNeeded(needed) {} 
-
-window.onload = function() {
-    if (typeof WORKSHOP_ID !== 'undefined' && WORKSHOP_ID) {
-        window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
-    }
-};
-
-    </script>
-    
-    <!-- Die Debug-Zeile direkt unter dem normalen Text -->
-    <div id="debug-text" style="position: absolute; left: 40px; bottom: 4vh; color: rgba(255,255,255,0.5); font-family: sans-serif; font-size: 14px; z-index: 100;"></div>
-
-    <!-- Addon-Vorschau über der Ladeleiste auf der rechten Seite -->
-    <img id="addon-preview" src="" style="display: none; position: absolute; right: 40px; bottom: 10vh; width: 250px; height: auto; border: 2px solid rgba(255, 0, 60, 0.4); box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;" alt="Addon Vorschau">
 
 </body>
 </html>
