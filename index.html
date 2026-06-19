@@ -95,6 +95,20 @@
             margin-bottom: 20px;
             z-index: 10;
         }
+        /* ===== ADDON VORSCHAU UNTEN LINKS ===== */
+        #addon-preview {
+            position: absolute;
+            left: 40px;          /* Gleicher Abstand wie dein Body-Padding */
+            bottom: 12vh;        /* Platziert das Bild ca. 10-12% über dem unteren Bildschirmrand */
+            width: 250px;        /* Gewünschte Breite der Vorschau */
+            height: auto;
+            border: 2px solid rgba(255, 0, 60, 0.6);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
     </style>
 </head>
 <body>
@@ -156,25 +170,48 @@
                 slides[aktuellesBild].classList.add('active');
             }
         }, ANZEIGE_DAUER);
+// ==========================================
+// GMOD DOWNLOAD ANZEIGE
+// ==========================================
+function DownloadingFile(fileName) {
+    document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
+    
+    // RegEx sucht nach einer reinen Zahlenfolge (der Workshop-ID) im Dateinamen
+    const match = fileName.match(/\d+/);
+    const previewImg = document.getElementById('addon-preview');
+    
+    if (match && match[0]) {
+        const workshopId = match[0];
+        // Setzt den Pfad zum Bild im Unterordner "addon_previews/"
+        previewImg.src = "addon_previews/" + workshopId + ".jpg";
+        previewImg.style.display = "block";
+    } else {
+        // Falls es sich um Standarddateien (Maps/Moneys/Lua) handelt, blende das Bild aus
+        previewImg.style.display = "none";
+    }
+}
 
-        // ==========================================
-        // GMOD DOWNLOAD ANZEIGE
-        // ==========================================
-        function DownloadingFile(fileName) {
-            document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
-        }
+function SetStatusChanged(status) {
+    document.getElementById('file-text').innerHTML = status;
+    
+    // Wenn GMod den Status ändert (z.B. "Mounting Addons" oder "Workshop Complete"),
+    // blenden wir das letzte Vorschaubild aus.
+    if (!status.includes("Downloading")) {
+        document.getElementById('addon-preview').style.display = "none";
+    }
+}
 
-        function SetStatusChanged(status) {
-            document.getElementById('file-text').innerHTML = status;
-        }
+function SetFilesNeeded(needed) {} 
 
-        function SetFilesNeeded(needed) {} 
+window.onload = function() {
+    if (typeof WORKSHOP_ID !== 'undefined' && WORKSHOP_ID) {
+        window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
+    }
+};
 
-        window.onload = function() {
-            if (WORKSHOP_ID) {
-                window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
-            }
-        };
     </script>
+    <!-- Addon-Vorschau in der linken unteren Ecke -->
+<img id="addon-preview" src="" style="display: none;" alt="Addon Preview">
+
 </body>
 </html>
