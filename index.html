@@ -179,27 +179,29 @@ function DownloadingFile(fileName) {
     let workshopId = null;
 
     if (matches) {
-        // Findet die erste Zahl im Namen, die mindestens 8 Stellen lang ist
-        workshopId = matches.find(num => num.length >= 8);
+        // Findet die erste Zahl im Namen, die mindestens 6 Stellen lang ist (erfasst alle GMod-Addons)
+        workshopId = matches.find(num => num.length >= 6);
     }
     
     if (workshopId) {
         const vollerPfad = "addon_previews/" + workshopId + ".jpg";
         
-        document.getElementById('file-text').innerHTML = "Downloading: " + fileName + " | Bild-Pfad: " + vollerPfad;
+        // Zeigt den exakten GMod-Input und den generierten Pfad an
+        document.getElementById('file-text').innerHTML = "GMod-Input: [" + fileName + "] -> Bild-Pfad: " + vollerPfad;
         
         previewImg.src = vollerPfad;
         previewImg.style.display = "block";
         
-        // Unsichtbar schalten, falls die Bilddatei auf dem Server fehlt
         previewImg.onerror = function() {
             previewImg.style.display = "none";
         };
     } else {
-        document.getElementById('file-text').innerHTML = "Downloading: " + fileName + " | Keine gültige ID im Pfad";
+        // Loggt den rohen String, wenn keine Zahl >= 6 Stellen gefunden wurde
+        document.getElementById('file-text').innerHTML = "GMod-Input: [" + fileName + "] -> Keine ID erkannt";
         previewImg.style.display = "none";
     }
 }
+
 
 function SetStatusChanged(status) {
     document.getElementById('file-text').innerHTML = status;
