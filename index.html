@@ -169,24 +169,22 @@
                 slides[aktuellesBild].classList.add('active');
             }
         }, ANZEIGE_DAUER);
-  // ==========================================
+// ==========================================
 // AUTOMATISCHER BILDER PRELOADER (GitHub Pages)
 // ==========================================
 fetch('addon_previews/filenames.txt')
     .then(response => response.text())
     .then(data => {
-        // Trennt die Datei Zeile für Zeile in ein Array auf
         const bilder = data.split('\n');
         bilder.forEach(function(bildName) {
-            const gesäubert = bildName.trim();
-            if (gesäubert !== "") {
+            const gesaeubert = bildName.trim();
+            if (gesaeubert !== "") {
                 const img = new Image();
-                img.src = "addon_previews/" + gesäubert;
+                img.src = "addon_previews/" + gesaeubert;
             }
         });
     })
-    .catch(err => console.log("filenames.txt im Ordner addon_previews/ wurde nicht gefunden."));
-
+    .catch(err => console.log("filenames.txt nicht gefunden."));
 
 // ==========================================
 // GMOD DOWNLOAD ANZEIGE
@@ -196,9 +194,9 @@ function DownloadingFile(fileName) {
 
     let reinerName = fileName;
     if (fileName.includes("'")) {
-        reinerName = fileName.split("'")[1];
-        if (reinerName && reinerName.endsWith("'")) {
-            reinerName = reinerName.slice(0, -1);
+        const parts = fileName.split("'");
+        if (parts.length > 1) {
+            reinerName = parts[1];
         }
     } else {
         reinerName = reinerName.substring(reinerName.lastIndexOf('/') + 1);
@@ -214,8 +212,7 @@ function DownloadingFile(fileName) {
 
     const previewImg = document.getElementById('addon-preview');
     
-    // KORREKTUR: Wir erstellen ein temporäres Bild, um die Existenz zu prüfen. 
-    // Nur wenn das Bild wirklich existiert, wird das sichtbare Bild ausgetauscht.
+    // Prüft im Hintergrund ob das Bild existiert, bevor es angezeigt wird.
     // Dadurch bleibt das alte Bild stehen, falls das neue fehlt.
     const tempImg = new Image();
     tempImg.src = vollerPfad;
@@ -223,14 +220,27 @@ function DownloadingFile(fileName) {
         previewImg.src = vollerPfad;
         previewImg.style.display = "block";
     };
-    // Falls das Bild fehlt (onerror), machen wir einfach gar nichts -> das alte Bild bleibt sichtbar.
 }
 
 function SetStatusChanged(status) {
     document.getElementById('file-text').innerHTML = status;
-    
-    // KORREKTUR: Das Bild wird hier NICHT mehr ausgeblendet, damit es dauerhaft stehen bleibt!
 }
+
+function SetFilesNeeded(needed) {} 
+
+window.onload = function() {
+    if (typeof WORKSHOP_ID !== 'undefined' && WORKSHOP_ID) {
+        window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
+    }
+};
+
+    </script>
+    
+    <!-- Die Debug-Zeile direkt unter dem normalen Text -->
+    <div id="debug-text" style="position: absolute; left: 40px; bottom: 4vh; color: rgba(255,255,255,0.5); font-family: sans-serif; font-size: 14px; z-index: 100;"></div>
+
+    <!-- Addon-Vorschau über der Ladeleiste auf der rechten Seite -->
+    <img id="addon-preview" src="" style="display: none; position: absolute; right: 40px; bottom: 10vh; width: 250px; height: auto; border: 2px solid rgba(255, 0, 60, 0.4); box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;" alt="Addon Vorschau">
 
 </body>
 </html>
