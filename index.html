@@ -95,6 +95,32 @@
             margin-bottom: 20px;
             z-index: 10;
         }
+        /* ===== WORKSHOP STICKERS (CLOCKWISE PLACEMENT) ===== */
+        .sticker-container {
+            position: absolute;
+            top: 5vh;
+            left: 5vw;
+            width: 90vw;
+            height: 70vh; /* Keeps it strictly above the lower text line */
+            pointer-events: none;
+            z-index: 5; /* Behind blood drips, above slideshow background */
+        }
+
+        .addon-sticker {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+            opacity: 0;
+            transform: scale(0) rotate(0deg);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        }
+
+        .addon-sticker.spawned {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -114,7 +140,9 @@
         <div class="drop" style="left: 93vw; top: 35vh; width: 13px; height: 18px; animation-duration: 9.5s; animation-delay: 1s;"></div>
     </div>
 
+    <div class="sticker-container" id="stickers-zone"></div>
     <div class="slideshow-wrapper">
+
         <div class="slideshow-container" id="slideshow"></div>
     </div>
 
@@ -157,23 +185,77 @@
             }
         }, ANZEIGE_DAUER);
 
-        // ==========================================
-        // GMOD DOWNLOAD ANZEIGE
-        // ==========================================
-        function DownloadingFile(fileName) {
-            document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
-        }
+    // ==========================================
+    // GMOD DOWNLOAD ANZEIGE & STICKER SYSTEM
+    // ==========================================
+    let stickerIndex = 0;
+    const MAX_STICKERS = 14; // Maximum stickers on screen at once
+    const activeStickers = [];
 
-        function SetStatusChanged(status) {
-            document.getElementById('file-text').innerHTML = status;
-        }
-
-        function SetFilesNeeded(needed) {} 
-
-        window.onload = function() {
-            if (WORKSHOP_ID) {
-                window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
+    function DownloadingFile( fileName ) {
+        document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
+    
+        // Check if the file belongs to a workshop item
+        if (fileName.indexOf("workshop/") !== -1) {
+            let match = fileName.match(/\d+/);
+            if (match) {
+                let addonId = match[0];
+                spawnAddonSticker(addonId);
             }
+        }
+    }
+
+    function spawnAddonSticker(addonId) {
+        const zone = document.getElementById('stickers-zone');
+        if (!zone) return;
+
+        // Limit active stickers to prevent performance drop or complete UI clutter
+        if (activeStickers.length >= MAX_STICKERS) {
+            let oldest = activeStickers.shift();
+            if (oldest) {
+                oldest.style.transform = "scale(0) rotate(0deg)";
+                oldest.style.opacity = "0";
+                setTimeout(() => oldest.remove(), 500);
+            }
+        }
+
+        const img = document.createElement('img');
+        // Loads from your folder containing your freshly scraped imagery
+        img.src = "addon_previews/" + addonId + ".jpg"; 
+        img.classList.add('addon-sticker');
+
+        // Fallback: If image fails to load (missing preview), just don't display it
+        img.onerror = function() { this.remove(); };
+
+        // Clockwise pathing distribution math based on stickerIndex
+        let angleStep = (stickerIndex % MAX_STICKERS) / MAX_STICKERS * 2 * Math.PI;
+        stickerIndex++;
+
+        // Calculate position along an elliptical path around center of screen
+        let x = 50 + Math.cos(angleStep) * 40; // percentage based placement
+        let y = 45 + Math.sin(angleStep) * 35;
+
+        // Apply specific offsets to clear the center slideshow strictly
+        img.style.left = x + "%";
+        img.style.top = y + "%";
+
+        // Add visual imperfection (sticker rotation angle twist)
+        let randomRotation = Math.floor(Math.random() * 30) - 15; // -15deg to +15deg
+
+        zone.appendChild(img);
+        activeStickers.push(img);
+    
+        // Trigger visual pop animation via Microtask queue frame bounce
+        setTimeout(() => {
+            img.classList.add('spawned');
+            img.style.transform = `translate(-50%, -50%) scale(1) rotate(${randomRotation}deg)`;
+        }, 50);
+    }
+
+function SetStatusChanged( status ) {
+    document.getElementById('file-text').innerHTML = status;
+}
+
         };
     </script>
 </body>
