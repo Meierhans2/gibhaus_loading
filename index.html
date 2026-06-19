@@ -95,32 +95,6 @@
             margin-bottom: 20px;
             z-index: 10;
         }
-        /* ===== WORKSHOP STICKERS (CLOCKWISE PLACEMENT) ===== */
-        .sticker-container {
-            position: absolute;
-            top: 5vh;
-            left: 5vw;
-            width: 90vw;
-            height: 70vh; /* Keeps it strictly above the lower text line */
-            pointer-events: none;
-            z-index: 5; /* Behind blood drips, above slideshow background */
-        }
-
-        .addon-sticker {
-            position: absolute;
-            width: 110px;
-            height: 110px;
-            object-fit: cover;
-            border: 3px solid #fff;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
-            opacity: 0;
-            transform: scale(0) rotate(0deg);
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-        }
-
-        .addon-sticker.spawned {
-            opacity: 1;
-        }
     </style>
 </head>
 <body>
@@ -140,126 +114,67 @@
         <div class="drop" style="left: 93vw; top: 35vh; width: 13px; height: 18px; animation-duration: 9.5s; animation-delay: 1s;"></div>
     </div>
 
-    <div class="sticker-container" id="stickers-zone"></div>
     <div class="slideshow-wrapper">
-
         <div class="slideshow-container" id="slideshow"></div>
     </div>
 
     <div class="file-line" id="file-text">Connecting...</div>
 
-   <script type="text/javascript">
-    // ==========================================
-    // CONFIGURATION (UMGESTELLT AUF ES5 VAR)
-    // ==========================================
-    var ORDNERNAME = "slides/";
-    var ANZAHL_BILDER = 7;
-    var ANZEIGE_DAUER = 15000;
+    <script>
+        // ==========================================
+        // EINFACHE EINSTELLUNGEN
+        // ==========================================
+        const ORDNERNAME = "slides/";             
+        const ANZAHL_BILDER = 7;                  
+        const WORKSHOP_ID = "3387451124";         
+        const ANZEIGE_DAUER = 15000;              
 
-    // Helper-Funktion: Ersetzt das moderne padStart, das in Awesomium abstürzt
-    function padZero(num, size) {
-        var s = num + "";
-        while (s.length < size) s = "0" + s;
-        return s;
-    }
-
-    // Bilder-Array befüllen (Klassische for-Schleife)
-    var bilder = [];
-    for (var i = 1; i <= ANZAHL_BILDER; i++) {
-        bilder.push(ORDNERNAME + padZero(i, 3) + ".jpg");
-    }
-
-    var aktuellesBildIndex = 0;
-    var hintergrund1 = document.getElementById('hintergrund1');
-    var hintergrund2 = document.getElementById('hintergrund2');
-    var aktuellesElement = hintergrund1;
-
-    function wechsleBild() {
-        var naechstesBildIndex = (aktuellesBildIndex + 1) % bilder.length;
-        var naechstesElement = (aktuellesElement === hintergrund1) ? hintergrund2 : hintergrund1;
-
-        naechstesElement.style.backgroundImage = "url('" + bilder[naechstesBildIndex] + "')";
-        naechstesElement.classList.add('aktiv');
-        aktuellesElement.classList.remove('aktiv');
-
-        aktuellesElement = naechstesElement;
-        aktuellesIndex = naechstesBildIndex; // Korrektur des globalen Trackings
-        aktuellesBildIndex = naechstesBildIndex;
-    }
-
-    // Slideshow starten
-    setInterval(wechsleBild, ANZEIGE_DAUER);
-
-
-    // ==========================================
-    // GMOD DOWNLOAD ANZEIGE & STICKER SYSTEM
-    // ==========================================
-
-    // EXPLIZITE WINDOW-BINDUNG: Zwingend erforderlich für native Engine-Aufrufe
-    window.DownloadingFile = function(fileName) {
-        var statusText = "Lade Datei herunter: " + fileName;
-        document.getElementById('file-text').innerHTML = statusText;
+        // ==========================================
+        // AUTOMATISCHE DIASHOW
+        // ==========================================
+        const container = document.getElementById('slideshow');
         
-        // Sticker spawnen bei bestimmten Dateitypen
-        if (fileName.indexOf(".mdl") !== -1) {
-            createSticker("model");
-        } else if (fileName.indexOf(".vtf") !== -1 || fileName.indexOf(".vmt") !== -1) {
-            createSticker("texture");
-        } else if (fileName.indexOf(".mp3") !== -1 || fileName.indexOf(".wav") !== -1) {
-            createSticker("sound");
-        }
-    };
-
-    window.SetStatusChanged = function(status) {
-        document.getElementById('file-text').innerHTML = status;
-    };
-
-    // Sticker Logik (Komplett bereinigt von Arrow-Functions & Let/Const)
-    function createSticker(type) {
-        var container = document.getElementById('sticker-container');
-        if (!container) return;
-
-        var sticker = document.createElement('div');
-        sticker.className = 'sticker ' + type;
-        
-        // Zufällige Rotation und Position innerhalb des Containers
-        var rotation = Math.floor(Math.random() * 40) - 20; // -20deg bis 20deg
-        var posX = Math.floor(Math.random() * 80) + 10;     // 10% bis 90%
-        var posY = Math.floor(Math.random() * 80) + 10;     // 10% bis 90%
-
-        sticker.style.left = posX + '%';
-        sticker.style.top = posY + '%';
-        sticker.style.transform = 'translate(-50%, -50%) rotate(' + rotation + 'deg)';
-
-        // Text-Inhalt je nach Typ zuweisen
-        if (type === "model") {
-            sticker.innerHTML = "📦 MODEL";
-        } else if (type === "texture") {
-            sticker.innerHTML = "🎨 TEXTURE";
-        } else if (type === "sound") {
-            sticker.innerHTML = "🎵 AUDIO";
+        for (let i = 1; i <= ANZAHL_BILDER; i++) {
+            const img = document.createElement('img');
+            const nummer = String(i).padStart(3, '0'); 
+            img.src = ORDNERNAME + nummer + ".jpg";
+            img.classList.add('slide');
+            container.appendChild(img);
         }
 
-        container.appendChild(sticker);
-
-        // Bluteffekt triggern bei jedem 5. Sticker (Zufall)
-        if (Math.random() < 0.2) {
-            triggerBloodSplatter();
-        }
-    }
-
-    function triggerBloodSplatter() {
-        var overlay = document.getElementById('blood-overlay');
-        if (!overlay) return;
-
-        overlay.style.opacity = '1';
+        const slides = document.querySelectorAll('.slide');
+        let aktuellesBild = Math.floor(Math.random() * ANZAHL_BILDER);
         
-        // Timeout in ES5
-        setTimeout(function() {
-            overlay.style.opacity = '0';
-        }, 500);
-    }
-</script>
+        if (slides.length > 0) {
+            slides[aktuellesBild].classList.add('active');
+        }
 
+        setInterval(() => {
+            if (slides.length > 0) {
+                slides[aktuellesBild].classList.remove('active');
+                aktuellesBild = (aktuellesBild + 1) % slides.length;
+                slides[aktuellesBild].classList.add('active');
+            }
+        }, ANZEIGE_DAUER);
+
+        // ==========================================
+        // GMOD DOWNLOAD ANZEIGE
+        // ==========================================
+        function DownloadingFile(fileName) {
+            document.getElementById('file-text').innerHTML = "Downloading: " + fileName;
+        }
+
+        function SetStatusChanged(status) {
+            document.getElementById('file-text').innerHTML = status;
+        }
+
+        function SetFilesNeeded(needed) {} 
+
+        window.onload = function() {
+            if (WORKSHOP_ID) {
+                window.location.href = "steam://url/CommunityFilePage/" + WORKSHOP_ID;
+            }
+        };
+    </script>
 </body>
 </html>
