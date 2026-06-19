@@ -173,34 +173,15 @@
 // GMOD DOWNLOAD ANZEIGE
 // ==========================================
 function DownloadingFile(fileName) {
-    // Holt alle Zahlen aus dem Dateinamen als Array
-    const matches = fileName.match(/\d+/g);
     const previewImg = document.getElementById('addon-preview');
-    let workshopId = null;
-
-    if (matches) {
-        // Findet die erste Zahl im Namen, die mindestens 6 Stellen lang ist (erfasst alle GMod-Addons)
-        workshopId = matches.find(num => num.length >= 6);
-    }
     
-    if (workshopId) {
-        const vollerPfad = "addon_previews/" + workshopId + ".jpg";
-        
-        // Zeigt den exakten GMod-Input und den generierten Pfad an
-        document.getElementById('file-text').innerHTML = "GMod-Input: [" + fileName + "] -> Bild-Pfad: " + vollerPfad;
-        
-        previewImg.src = vollerPfad;
-        previewImg.style.display = "block";
-        
-        previewImg.onerror = function() {
-            previewImg.style.display = "none";
-        };
-    } else {
-        // Loggt den rohen String, wenn keine Zahl >= 6 Stellen gefunden wurde
-        document.getElementById('file-text').innerHTML = "GMod-Input: [" + fileName + "] -> Keine ID erkannt";
-        previewImg.style.display = "none";
-    }
+    // Gibt den Dateinamen komplett ungefiltert aus
+    document.getElementById('file-text').innerHTML = "Roher GMod-Dateiname: [" + fileName + "]";
+    
+    // Bild bleibt vorerst aus, bis wir den echten String kennen
+    previewImg.style.display = "none";
 }
+
 
 
 function SetStatusChanged(status) {
